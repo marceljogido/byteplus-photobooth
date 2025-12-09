@@ -1183,49 +1183,17 @@ export default function App() {
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
-    // Try QZ Tray first (no popup)
-    // Pre-open fallback window in the same user gesture to avoid popup-blockers when we need it
-    let fallbackWindow = null
-    try {
-      fallbackWindow = window.open('', 'photobooth-print', 'noopener,noreferrer')
-    } catch {
-      // ignore
-    }
-    if (!fallbackWindow) {
-      setPrintMessage('Popup diblokir; izinkan pop-up agar bisa cetak jika QZ Tray offline.')
-    }
-
-    try {
-      const qz = await ensureQZConnection()
-      const printer = await qz.printers.getDefault()
-      if (!printer) {
-        throw new Error('Printer default tidak ditemukan')
-      }
-      const config = qz.configs.create(printer, {
-        copies: 1,
-        size: { width: 6, height: 4, units: 'in' },
-        margins: 0,
-        rasterize: true
-      })
-      setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
-      await qz.print(config, [{ type: 'image', data: printSrc }])
-      setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
-      if (fallbackWindow && !fallbackWindow.closed) {
-        try {
-          fallbackWindow.close()
-        } catch {
-          // ignore
-        }
-      }
+    // Langsung buka link (sama dengan URL di QR). User tekan Ctrl+P / Cmd+P untuk cetak.
+    const directTab = window.open(printSrc, 'photobooth-print', 'noopener,noreferrer')
+    if (directTab) {
+      setPrintMessage('Membuka link gambar (QR) untuk dicetak. Tekan Ctrl+P / Cmd+P. Jika terblokir, izinkan pop-up.')
+      directTab.focus?.()
       return
-    } catch (err) {
-      console.warn('QZ Tray print gagal, fallback ke tab print:', err)
-      setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
     }
 
-    // Fallback: open print tab (needs popup allowed)
+    // Last resort: embed in a print-friendly page
     const sizeCss = '4in 6in'
-    const printWindow = fallbackWindow || window.open('', 'photobooth-print', 'noopener,noreferrer')
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
     if (!printWindow) {
       alert('Popup diblokir, izinkan popup untuk mencetak.')
       return
@@ -1245,6 +1213,11 @@ export default function App() {
   </head>
   <body>
     <img id="print-image" src="${printSrc}" alt="AI Photo" />
+    <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; padding: 10px 12px; border-radius: 8px; font-family: sans-serif; font-size: 12px;">
+      <div>Jika dialog print tidak muncul:</div>
+      <div>- Tekan Ctrl+P / Cmd+P</div>
+      <div>- Atau buka link ini: <a href="${printSrc}" target="_blank" rel="noreferrer" style="color:#c4d7ff;">Buka gambar</a></div>
+    </div>
     <script>
       const img = document.getElementById('print-image');
       img.onload = () => setTimeout(() => { window.focus(); window.print(); }, 120);

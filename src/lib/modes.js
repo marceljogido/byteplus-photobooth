@@ -43,7 +43,7 @@ const modes = {
     name: 'BytePlus Printer Badge',
     emoji: '\uD83D\uDCF0',
     prompt:
-      'Full-frame hyper-realistic portrait of the subject as a premium tech ambassador (bukan kartu, bukan printer, tanpa badge, tanpa business card). proporsi tubuh wajar, ekspresi ramah. Outfit rapi: blazer + kemeja atau outfit kantor kasual, warna biru/gelap. Latar gradasi biru gelap dengan pola sirkuit ramai dan cahaya expo halus; sedikit bokeh, tanpa teks atau logo.'
+      'Full-frame, fun tech-caricature portrait (gaya 3D/illustration) dengan sedikit eksaggerasi fitur tapi tetap menjaga identitas wajah. Tidak ada printer/kartu/badge/business card. Proporsi tubuh wajar, ekspresi ramah. Outfit rapi ala ambassador (blazer + kaos/kemeja atau smart casual) warna biru/gelap. Latar gradasi biru gelap dengan pola sirkuit sedang, cahaya expo lembut, tanpa teks atau logo. Sisakan area kosong bersih di bagian bawah gambar (footer) tanpa elemen apa pun untuk tempat watermark tempel.'
   }
 }
 

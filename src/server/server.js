@@ -266,7 +266,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   const timestamp = Date.now()
   const extension = (req.file.originalname.split('.').pop() || 'jpg').toLowerCase()
   const isGif = extension === 'gif'
-  const filename = `DigiOH_PhotoBox_${timestamp}.${extension}`
+  const filename = `BytePlus_${timestamp}.${extension}`
   const targetDir = isGif ? UPLOAD_GIF_DIR : UPLOAD_IMG_DIR
   const localPath = path.join(targetDir, filename)
 

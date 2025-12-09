@@ -25,7 +25,7 @@ const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
 const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
 const WATERMARK_MAP = {
   strangerthings: {position: 'top-center', scale: 0.3, variant: 'putih'},
-  f1racing: {position: 'top-center', scale: 0.2, variant: 'putih'},
+  f1racing: {position: 'top-center', scale: 0.2, variant: 'hitam'},
   retroanime: {position: 'top-left', scale: 0.2, variant: 'hitam'},
   beach: {position: 'top-left', scale: 0.2, variant: 'hitam'},
   byteplus: {position: 'top-left', scale: 0.2, variant: 'putih'},
@@ -662,7 +662,7 @@ export default function App() {
   const startCountdown = () => {
     if (isLoading || countdown > 0) return
     
-    setCountdown(3)
+    setCountdown(5)
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -808,7 +808,7 @@ export default function App() {
     debugLog('🧾 generateQRCodeFor called:', {filename, cacheKey})
     debugLog('🌐 Image URL for QR:', imageUrl)
     
-    const defaultFilename = filename || `digioh-photobooth-${Date.now()}.jpg`
+    const defaultFilename = filename || `byteplus-photobooth-${Date.now()}.jpg`
     
     try {
       const uploadResult = await uploadToStorage(imageUrl, defaultFilename, watermarkOptions)
@@ -976,7 +976,7 @@ export default function App() {
           ? {qrCode: qrCodes.photo, directUrl: cloudUrls[photoId]}
           : await generateQRCodeFor(
               photoData,
-              `digioh-photobooth-foto-${Date.now()}.jpg`,
+              `byteplus-photobooth-foto-${Date.now()}.jpg`,
               photoId,
               wmSettings
             )
@@ -989,7 +989,7 @@ export default function App() {
           ? {qrCode: qrCodes.gif, directUrl: cloudUrls.gif}
           : await generateQRCodeFor(
               ensuredGifUrl,
-              `digioh-photobooth-gif-${Date.now()}.gif`,
+              `byteplus-photobooth-gif-${Date.now()}.gif`,
               'gif'
             )
 
@@ -1167,7 +1167,7 @@ export default function App() {
         const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
         const uploadResult = await generateQRCodeFor(
           imageData.outputs[currentPhotoId],
-          `digioh-photobox-print-${Date.now()}.jpg`,
+          `byteplus-photobox-print-${Date.now()}.jpg`,
           `${currentPhotoId}-print`,
           wmSettings
         )

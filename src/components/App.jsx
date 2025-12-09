@@ -22,6 +22,7 @@ const canvas = document.createElement('canvas')
 const ctx = canvas.getContext('2d')
 const modeKeys = Object.keys(modes)
 const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
+const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
 
 const DEBUG_LOGS_ENABLED =
   String(import.meta.env?.VITE_DEBUG_LOGS ?? '').trim().toLowerCase() === 'true'
@@ -107,11 +108,11 @@ const computeCaptureGeometry = (videoWidth, videoHeight, {portrait, rotate}) => 
   }
 }
 
-const loadImage = src =>
-  new Promise((resolve, reject) => {
-    if (typeof Image === 'undefined') {
-      reject(new Error('Image API unavailable'))
-      return
+  const loadImage = src =>
+    new Promise((resolve, reject) => {
+      if (typeof Image === 'undefined') {
+        reject(new Error('Image API unavailable'))
+        return
     }
     const img = new Image()
     img.onload = () => resolve(img)
@@ -136,6 +137,39 @@ const getMimeTypeFromDataUrl = dataUrl => {
     ? dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);/)
     : null
   return match ? match[1] : 'image/png'
+}
+
+const loadQZ = () =>
+  new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('Window unavailable'))
+      return
+    }
+    if (window.qz) {
+      resolve(window.qz)
+      return
+    }
+    const script = document.createElement('script')
+    script.src = QZ_SCRIPT_URL
+    script.async = true
+    script.onload = () => resolve(window.qz)
+    script.onerror = () => reject(new Error('Gagal memuat qz-tray.js'))
+    document.head.appendChild(script)
+  })
+
+const ensureQZConnection = async () => {
+  const qz = await loadQZ()
+  // For kiosk/local use: allow unsigned (must be enabled in QZ Tray settings)
+  if (qz.security?.setCertificatePromise) {
+    qz.security.setCertificatePromise(resolve => resolve())
+  }
+  if (qz.security?.setSignaturePromise) {
+    qz.security.setSignaturePromise((toSign, resolve) => resolve())
+  }
+  if (!qz.websocket.isActive()) {
+    await qz.websocket.connect()
+  }
+  return qz
 }
 
 const buildWatermarkedPreview = async base64Data => {
@@ -264,6 +298,7 @@ export default function App() {
   const watermarkedOutputsRef = useRef({})
   const cloudUrlsRef = useRef({})
   const infoTimeoutRef = useRef(null)
+  const qzLoadedRef = useRef(false)
   useEffect(() => {
     if (typeof document === 'undefined') return
     const {body} = document
@@ -1081,6 +1116,28 @@ export default function App() {
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
+    // Try QZ Tray first (no popup)
+    try {
+      const qz = await ensureQZConnection()
+      const printer = await qz.printers.getDefault()
+      if (!printer) {
+        throw new Error('Printer default tidak ditemukan')
+      }
+      const config = qz.configs.create(printer, {
+        copies: 1,
+        size: { width: 6, height: 4, units: 'in' },
+        margins: 0,
+        rasterize: true
+      })
+      setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
+      await qz.print(config, [{ type: 'image', data: printSrc }])
+      setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
+      return
+    } catch (err) {
+      console.warn('QZ Tray print gagal, fallback ke tab print:', err)
+    }
+
+    // Fallback: open print tab (needs popup allowed)
     const sizeCss = '4in 6in'
     const printWindow = window.open('', '_blank', 'noopener,noreferrer')
     if (!printWindow) {

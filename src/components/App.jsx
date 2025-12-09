@@ -728,6 +728,10 @@ export default function App() {
       }
       
       if (cacheKey) {
+        cloudUrlsRef.current = {
+          ...cloudUrlsRef.current,
+          [cacheKey]: uploadResult.url
+        }
         setCloudUrls(prev => ({
           ...prev,
           [cacheKey]: uploadResult.url
@@ -897,6 +901,14 @@ export default function App() {
           return false
         }
 
+        cloudUrlsRef.current = {
+          ...cloudUrlsRef.current,
+          [photoId]: photoResult.directUrl,
+          gif: gifResult.directUrl
+        }
+        setCloudUrls({
+          ...cloudUrlsRef.current
+        })
         setQrCodes({
           photo: photoResult.qrCode,
           gif: gifResult.qrCode
@@ -1069,11 +1081,6 @@ export default function App() {
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
-    if (!printSrc) {
-      alert('? Hasil AI belum siap untuk dicetak.')
-      setPrintMessage('Hasil AI belum siap untuk dicetak.')
-      return
-    }
     const sizeCss = '4in 6in'
     const printWindow = window.open('', '_blank', 'noopener,noreferrer')
     if (!printWindow) {
@@ -1097,7 +1104,7 @@ export default function App() {
     <img id="print-image" src="${printSrc}" alt="AI Photo" />
     <script>
       const img = document.getElementById('print-image');
-      img.onload = () => setTimeout(() => { window.print(); }, 100);
+      img.onload = () => setTimeout(() => { window.focus(); window.print(); }, 120);
       img.onerror = () => {
         alert('Gagal memuat gambar untuk dicetak.');
         setTimeout(() => window.close(), 300);

@@ -13,7 +13,7 @@ Booth swafoto interaktif yang memadukan kamera langsung dengan transformasi arti
 - Node.js 18 atau lebih baru.
 - Akun Google AI Studio dengan akses ke Gemini 2.5 Flash Image.
 - Kredensial Nextcloud, Google Drive (service account), atau FTP (opsional, untuk upload otomatis).
-- Berkas watermark PNG (default: `public/logowatermark.png`).
+- Berkas watermark PNG (default: `public/BytePlus.png`).
 
 ## Persiapan Lingkungan
 1. Salin `.env.example` menjadi `.env` lalu isi variabel berikut:
@@ -60,6 +60,6 @@ Antarmuka secara default dapat diakses di `http://localhost:5173`, sedangkan bac
 - Simulasikan kegagalan jaringan untuk memverifikasi fallback penyimpanan lokal.
 
 ## Lisensi dan Atribusi
-- Aset logo dan watermark mengikuti hak milik PT. Digital Open House.
+- Aset logo dan watermark mengikuti hak milik BytePlus / pihak terkait.
 - Ketergantungan pihak ketiga tunduk pada lisensi masing-masing (lihat `package.json`).
 - Teknologi AI menggunakan Google Gemini 2.5 Flash Image.

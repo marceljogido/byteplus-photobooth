@@ -21,7 +21,7 @@ const UPLOAD_GIF_DIR = path.join(UPLOAD_BASE_DIR, 'gif')
 const WATERMARK_FILE =
   process.env.WATERMARK_FILE_PATH
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
-    : path.resolve(__dirname, '..', '..', 'public', 'logowatermark.png')
+    : path.resolve(__dirname, '..', '..', 'public', 'BytePlus.png')
 
 const ensureDir = dir => {
   if (!fs.existsSync(dir)) {

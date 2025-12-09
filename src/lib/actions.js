@@ -11,7 +11,7 @@ import modes from './modes'
 const get = useStore.getState
 const set = useStore.setState
 const GIF_MAX_LONG_SIDE = 720
-const WATERMARK_SOURCE = '/logowatermark.png'
+const WATERMARK_SOURCE = '/BytePlus.png'
 const DEFAULT_CANVAS_BACKGROUND = '#0b1120'
 
 const loadImage = src =>

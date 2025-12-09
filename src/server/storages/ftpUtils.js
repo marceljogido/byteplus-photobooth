@@ -16,7 +16,7 @@ const USE_FTP_CONFIG_FILE = String(process.env.FTP_USE_CONFIG_FILE || process.en
 const WATERMARK_FILE =
   process.env.WATERMARK_FILE_PATH
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
-    : path.resolve(__dirname, '..', '..', '..', 'public', 'logowatermark.png')
+    : path.resolve(__dirname, '..', '..', '..', 'public', 'BytePlus.png')
 const UPLOAD_BASE_DIR =
   process.env.UPLOAD_BASE_DIR
     ? path.resolve(process.env.UPLOAD_BASE_DIR)

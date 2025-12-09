@@ -21,7 +21,7 @@ import modes from '../lib/modes'
 const canvas = document.createElement('canvas')
 const ctx = canvas.getContext('2d')
 const modeKeys = Object.keys(modes)
-const WATERMARK_OVERLAY_SRC = '/logowatermark.png'
+const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
 
 const DEBUG_LOGS_ENABLED =
   String(import.meta.env?.VITE_DEBUG_LOGS ?? '').trim().toLowerCase() === 'true'
@@ -46,8 +46,7 @@ const PORTRAIT_ASPECT = 9 / 16
 const LANDSCAPE_ASPECT = 16 / 9
 const FORCE_PORTRAIT_CAPTURE = false
 const DESKTOP_BREAKPOINT = 1024
-const BYTEPLUS_URL =
-  'https://www.byteplus.com/id?gad_source=1&gad_campaignid=23246596293&gbraid=0AAAAA9g5XBR57PBcd0U-6u50mpmhD_D-X&gclid=Cj0KCQiAoZDJBhC0ARIsAERP-F9oz6pNi7N39LRE7SnToTHTBJey5eHt-yz5jpBKxnArG_jy-fL7yF4aAsrbEALw_wcB'
+const BYTEPLUS_URL = 'https://www.byteplus.com'
 
 const resolveViewportOrientation = () => {
   if (FORCE_PORTRAIT_CAPTURE) return 'portrait'
@@ -154,11 +153,11 @@ const buildWatermarkedPreview = async base64Data => {
   previewCtx.drawImage(sourceImage, 0, 0, width, height)
 
   if (watermark && watermark.width && watermark.height) {
-    const targetWidth = width * 0.2
+    const targetWidth = width * 0.22
     const targetHeight = targetWidth * (watermark.height / watermark.width)
-    const margin = Math.max(10, Math.round(Math.min(width, height) * 0.04))
+    const margin = Math.max(14, Math.round(Math.min(width, height) * 0.03))
     const x = width - targetWidth - margin
-    const y = height - targetHeight - margin
+    const y = margin
     previewCtx.drawImage(watermark, x, y, targetWidth, targetHeight)
   }
 
@@ -258,7 +257,25 @@ export default function App() {
     height: typeof window !== 'undefined' ? window.innerHeight : 0
   }))
   const [showLandingScreen, setShowLandingScreen] = useState(true)
+  const [showInfoEmbed, setShowInfoEmbed] = useState(false)
+  const [infoError, setInfoError] = useState(false)
+  const [printMessage, setPrintMessage] = useState('')
+  const [showQrOverlay, setShowQrOverlay] = useState(false)
   const watermarkedOutputsRef = useRef({})
+  const infoTimeoutRef = useRef(null)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const {body} = document
+    const prev = body.style.overflow
+    if (showInfoEmbed) {
+      body.style.overflow = 'hidden'
+    } else {
+      body.style.overflow = prev || ''
+    }
+    return () => {
+      body.style.overflow = prev || ''
+    }
+  }, [showInfoEmbed])
   const uploadTokenRef = useRef(0)
   useEffect(() => {
     watermarkedOutputsRef.current = watermarkedOutputs
@@ -757,7 +774,7 @@ export default function App() {
     setCloudUrls({})
     setQrCodes({photo: null, gif: null})
     setShowDownloadModal(false)
-    setCurrentPage('camera')
+    setCurrentPage('camera'); setShowLandingScreen(true)
     setCurrentPhotoId(null)
     setShowPreview(false)
     setIsProcessingPhoto(false)
@@ -813,7 +830,24 @@ export default function App() {
         return false
       }
 
-      const photoData = imageData.outputs[photoId]
+      let photoData = watermarkedOutputsRef.current[photoId] || watermarkedOutputs[photoId]
+      if (!photoData && imageData.outputs[photoId]) {
+        try {
+          const generated = await buildWatermarkedPreview(imageData.outputs[photoId])
+          photoData = generated
+          watermarkedOutputsRef.current = {
+            ...watermarkedOutputsRef.current,
+            [photoId]: generated
+          }
+          setWatermarkedOutputs(current => ({
+            ...current,
+            [photoId]: generated
+          }))
+        } catch (error) {
+          console.warn('Failed to generate watermark on upload path:', error)
+          photoData = imageData.outputs[photoId]
+        }
+      }
       if (!photoData) {
         return false
       }
@@ -1009,6 +1043,106 @@ export default function App() {
 
     setShowDownloadModal(true)
   }
+  const handlePrintClick = () => {
+    if (!currentPhotoId) {
+      alert('? Foto tidak tersedia. Silakan ambil foto terlebih dahulu.')
+      return
+    }
+    const currentPhoto = photos.find(p => p.id === currentPhotoId)
+    if (!currentPhoto || currentPhoto.isBusy) {
+      alert('? Foto masih dipoles AI. Tunggu sejenak ya!')
+      return
+    }
+    const printSrc =
+      watermarkedOutputs[currentPhotoId] || imageData.outputs[currentPhotoId] || null
+    if (!printSrc) {
+      alert('? Hasil AI belum siap untuk dicetak.')
+      setPrintMessage('Hasil AI belum siap untuk dicetak.')
+      return
+    }
+    if (typeof document === 'undefined' || !document.body) {
+      alert('Dokumen tidak siap untuk cetak.')
+      setPrintMessage('Dokumen tidak siap untuk cetak.')
+      return
+    }
+    setPrintMessage('Menyiapkan cetak 4x6 dengan margin 3mm...')
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.visibility = 'hidden'
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentWindow?.document
+    if (!doc) {
+      alert('Gagal membuka jendela cetak.')
+      iframe.remove()
+      return
+    }
+
+    doc.open()
+    doc.write(`<!doctype html>
+<html>
+  <head>
+    <title>Print Photo</title>
+    <style>
+      @page { size: 4in 6in; margin: 3mm; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+      }
+      body {
+        padding: 3mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="print-image" src="${printSrc}" alt="AI Photo" />
+    <script>
+      const img = document.getElementById('print-image');
+      img.onload = () => {
+        setTimeout(() => {
+          window.focus();
+          window.print();
+        }, 60);
+      };
+      img.onerror = () => {
+        alert('Gagal memuat gambar untuk dicetak.');
+        window.opener?.postMessage({type: 'print-error'}, '*');
+        setTimeout(() => window.close(), 200);
+      };
+      window.onafterprint = () => {
+        window.opener?.postMessage({type: 'print-done'}, '*');
+        setTimeout(() => window.close(), 200);
+      };
+    <\\/script>
+  </body>
+</html>`)
+    doc.close()
+    const handleMsg = event => {
+      if (event?.data?.type === 'print-done') {
+        setPrintMessage('Membuka dialog print 4x6. Jika tidak muncul, izinkan popup atau gunakan mode kiosk-printing.')
+      } else if (event?.data?.type === 'print-error') {
+        setPrintMessage('Gagal memuat gambar untuk dicetak.')
+      }
+    }
+    window.addEventListener('message', handleMsg, {once: true})
+  }
   const handleModeHover = useCallback((modeInfo, event) => {
     if (!modeInfo) {
       setHoveredMode(null)
@@ -1042,7 +1176,7 @@ export default function App() {
     : null
   const renderResultSection = section => {
     const isAi = section === 'ai'
-    const heading = isAi ? '✨ Hasil AI' : '🎞️ GIF'
+    const heading = isAi ? '' : 'GIF'
     const isBusy = isAi ? currentPhoto?.isBusy : gifInProgress || !gifUrl
     const src = isAi
       ? aiPhotoSrc || (currentPhotoId ? imageData.outputs[currentPhotoId] : null)
@@ -1051,7 +1185,7 @@ export default function App() {
     const placeholderText = isAi ? 'Sedang memproses...' : 'GIF sedang diproses...'
     return (
       <div className="photoSide" key={section}>
-        <h3>{heading}</h3>
+        {heading ? <h3>{heading}</h3> : null}
         {isBusy || !src ? (
           <div className="loadingPlaceholder">
             <div className="spinner"></div>
@@ -1067,41 +1201,90 @@ export default function App() {
   if (showLandingScreen) {
     return (
       <div className="landingScreen">
-        <div className="landingBackdrop landingBackdrop--left" />
-        <div className="landingBackdrop landingBackdrop--right" />
-        <div className="landingCard">
-          <div className="landingBadge">Event Experience</div>
-          <div className="landingLogo">
-            <img src="/DIGIOH_Logomark.svg" alt="digiSelfie AI" />
-            <div>
-              <p className="landingLogoTitle">digiSelfie AI</p>
-              <span>Powered by DigiOH</span>
-            </div>
-          </div>
-          <h1 className="landingTitle">
-            <span>Selamat</span>
-            <span>Datang</span>
-          </h1>
-          <p className="landingSubtitle">
-            Pilih destinasi sebelum memulai pengalaman photobooth Anda bersama BytePlus x DigiOH.
-          </p>
-          <div className="landingActions">
-            <button
-              type="button"
-              className="landingButton secondary"
-              onClick={() => window.open(BYTEPLUS_URL, '_blank', 'noopener,noreferrer')}
-            >
-              <span className="icon">language</span>
-              WEBSITE BYTEPLUS
-            </button>
-            <button
-              type="button"
-              className="landingButton primary"
-              onClick={() => setShowLandingScreen(false)}
-            >
-              <span className="icon">camera_enhance</span>
-              PHOTOBOOTH AI
-            </button>
+        <div className="landingContent">
+          <div className="landingButtons">
+            {showInfoEmbed ? (
+              <div className="infoEmbedCard">
+                <div className="infoEmbedHeader">
+                  <button
+                    type="button"
+                    className="infoBackButton"
+                    onClick={() => {
+                      if (infoTimeoutRef.current) {
+                        clearTimeout(infoTimeoutRef.current)
+                        infoTimeoutRef.current = null
+                      }
+                      setShowInfoEmbed(false)
+                      setInfoError(false)
+                    }}
+                  >
+                    <span className="icon">arrow_back</span>
+                    Back
+                  </button>
+                  <div className="infoTimerHint">Auto close in 3 minutes</div>
+                </div>
+                <div className="infoEmbedBody">
+                  {!infoError ? (
+                    <iframe
+                      className="infoEmbedFrame"
+                      src={BYTEPLUS_URL}
+                      title="BytePlus Information"
+                      allowFullScreen
+                      loading="eager"
+                      onError={() => setInfoError(true)}
+                    />
+                  ) : (
+                    <div className="infoEmbedError">
+                      <p>Tidak bisa menampilkan BytePlus di dalam halaman (dibatasi X-Frame-Options).</p>
+                      <button
+                        type="button"
+                        className="infoOpenExternal"
+                        onClick={() => window.location.assign(BYTEPLUS_URL)}
+                      >
+                        Buka langsung di tab ini
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="landingImageButton"
+                  onClick={() => {
+                    setInfoError(false)
+                    setShowInfoEmbed(true)
+                    if (infoTimeoutRef.current) {
+                      clearTimeout(infoTimeoutRef.current)
+                    }
+                    infoTimeoutRef.current = setTimeout(() => {
+                      setShowInfoEmbed(false)
+                      setInfoError(false)
+                      infoTimeoutRef.current = null
+                    }, 3 * 60 * 1000)
+                  }}
+                >
+                  <img
+                    src="/DASHBOARD_Button - Browser.png"
+                    alt="BytePlus Information"
+                    loading="lazy"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  className="landingImageButton"
+                  onClick={() => setShowLandingScreen(false)}
+                >
+                  <img
+                    src="/DASHBOARD_Button - AI Photobooth.png"
+                    alt="AI Photobooth"
+                    loading="lazy"
+                  />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1110,14 +1293,7 @@ export default function App() {
 
   return (
     <>
-      {/* Header dengan Logo dan Nama Aplikasi */}
-      <header className="appHeader">
-        <div className="logoContainer">
-          <img src="/DIGIOH_Logomark.svg" alt="digiSelfie AI" className="appLogo" />
-          <h1 className="appTitle">digiSelfie AI</h1>
-        </div>
-      </header>
-      <main>
+      <main className={c({cameraBackground: currentPage === 'camera'})}>
         {/* Navigation Header */}
         {currentPage === 'results' && (
           <div className="pageHeader">
@@ -1223,7 +1399,7 @@ export default function App() {
                     {(isProcessingPhoto || photos.find(p => p.id === currentPhotoId)?.isBusy) ? (
                       <div className="processingStatus">
                         <div className="spinner"></div>
-                        <p>Foto Anda sedang diproses dengan AI.</p>
+                        <p>Foto Anda sedang diproses dengan BytePluss AI.</p>
                       </div>
                     ) : (
                       <div className="readyStatus">
@@ -1267,7 +1443,7 @@ export default function App() {
               <span className="dot dot-2"></span>
               <span className="dot dot-3"></span>
             </div>
-            <h3 className="aiProcessingTitle">Foto Anda sedang diproses dengan AI.</h3>
+            <h3 className="aiProcessingTitle">Foto Anda sedang diproses dengan BytePluss AI.</h3>
             <p className="aiProcessingSubtitle">
               Harap menunggu, pratinjau akan siap segera.
             </p>
@@ -1508,85 +1684,86 @@ export default function App() {
         </div>
       </>
       )}
+      {showQrOverlay && (
+        <div className="qrOverlay" onClick={e => {
+          if (e.target === e.currentTarget) setShowQrOverlay(false)
+        }}>
+          <div className="qrOverlayContent">
+            <div className="qrOverlayHeader">
+              <button className="infoBackButton" onClick={() => setShowQrOverlay(false)}>
+                <span className="icon">close</span>
+                Tutup
+              </button>
+            </div>
+            <div className="qrOverlayBody">
+              {qrCodes.photo ? (
+                <img src={qrCodes.photo} alt="QR Foto" className="qrOverlayImage" />
+              ) : (
+                <div className="qrInlinePlaceholder">
+                  <div className="spinner"></div>
+                  <p>Menyiapkan QR...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Results Page */}
       {currentPage === 'results' && currentPhotoId && (
         <div className="resultsPage">
           <div className="photoResult">
-            <div className={c('photoComparison', {isMobileResults})}>
-              {isMobileResults ? (
-                <>
-                  <div className="resultTabs" role="tablist" aria-label="Hasil foto dan GIF">
-                    {RESULT_TAB_OPTIONS.map(({key, label, icon}) => {
-                      const isActive = activeResultTab === key
-                      const isAi = key === 'ai'
-                      const isBusy = isAi ? currentPhoto?.isBusy : gifInProgress || !gifUrl
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          id={`result-tab-${key}`}
-                          className={c('resultTabButton', {active: isActive})}
-                          onClick={() => setActiveResultTab(key)}
-                          role="tab"
-                          aria-selected={isActive}
-                          aria-controls="result-panel"
-                          tabIndex={isActive ? 0 : -1}
-                        >
-                          <span className="icon">{icon}</span>
-                          <span className="resultTabLabel">{label}</span>
-                          {isBusy && <span className="resultTabStatus">Loading</span>}
-                        </button>
-                      )
-                    })}
+            <div className="resultSolo">
+              {renderResultSection('ai')}
+              <button
+                type="button"
+                className="qrInlineCard"
+                onClick={() => setShowQrOverlay(true)}
+                aria-label="Lihat QR foto"
+              >
+                <h4 className="qrInlineTitle">QR Download Foto</h4>
+                {qrCodes.photo ? (
+                  <img src={qrCodes.photo} alt="QR Foto" className="qrInlineImage qrInlineImage--small" />
+                ) : (
+                  <div className="qrInlinePlaceholder">
+                    <div className="spinner"></div>
+                    <p>Menyiapkan QR...</p>
                   </div>
-                  <div
-                    className="resultPanel"
-                    role="tabpanel"
-                    id="result-panel"
-                    aria-labelledby={`result-tab-${activeResultTab}`}
-                  >
-                    {renderResultSection(activeResultTab)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  {renderResultSection('ai')}
-                  {renderResultSection('gif')}
-                </>
+                )}
+                <span className="qrInlineHint">Ketuk untuk perbesar</span>
+              </button>
+              <div className="resultsActions singleColumn">
+                <button
+                  className="btn btnSecondary"
+                  onClick={handlePrintClick}
+                  disabled={photos.find(p => p.id === currentPhotoId)?.isBusy}
+                  style={{
+                    background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                    width: '100%',
+                    fontSize: '16px',
+                    padding: '15px 25px'
+                  }}
+                >
+                  <span className="icon">print</span>
+                  Print AI
+                </button>
+                
+                <button 
+                  className="btn btnSecondary"
+                  onClick={retakePhoto}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    width: '100%',
+                    fontSize: '16px',
+                    padding: '15px 25px'
+                  }}
+                >
+                  <span className="icon">check</span>
+                  Selesai
+                </button>
+              </div>
+              {printMessage && (
+                <p className="printNote">{printMessage}</p>
               )}
-            </div>
-            {/* 3 Tombol Utama: Download GIF | Download Foto | Selesai */}
-            <div className="resultsActions">
-              <button 
-                className="btn btnPrimary"
-                onClick={handleDownloadClick}
-                disabled={isUploading || photos.find(p => p.id === currentPhotoId)?.isBusy || gifInProgress}
-                style={{
-                  fontSize: '16px',
-                  padding: '15px 25px',
-                  minWidth: '180px',
-                  background: 'linear-gradient(135deg, #f59e0b, #f97316)'
-                }}
-              >
-                <span className="icon">
-                  {isUploading ? 'hourglass_empty' : 'download'}
-                </span>
-                Download
-              </button>
-              
-              <button 
-                className="btn btnSecondary"
-                onClick={retakePhoto}
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  minWidth: '160px',
-                  fontSize: '16px',
-                  padding: '15px 25px'
-                }}
-              >
-                <span className="icon">check</span>
-                Selesai
-              </button>
             </div>
           </div>
         </div>
@@ -1737,3 +1914,5 @@ export default function App() {
     </>
   )
 }
+
+

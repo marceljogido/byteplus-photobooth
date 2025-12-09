@@ -3,15 +3,15 @@
 ## 1. Ringkasan Konsep
 - **Tagline**: *Instant Style: Transform Your Selfie with AI.*
 - **Inti pengalaman**: Booth swafoto layar sentuh yang menggabungkan kamera langsung, pilihan gaya artistik, dan pemrosesan generatif Google Gemini 2.5 Flash Image. Setiap sesi menghadirkan foto statis ber-watermark serta GIF perbandingan sebelum-sesudah secara otomatis.
-- **Karakter produk**: Ceria, futuristik, ramah pengguna, namun tetap rapi untuk kebutuhan Digital Open House.
+- **Karakter produk**: Ceria, futuristik, ramah pengguna, dengan branding BytePlus yang tegas.
 
 ## 2. Identitas Visual dan Nuansa UI
 - **Palet aktif**: Gradien toska dan aqua (#ccfbf1 ke #6ee7b7) dengan aksen ungu kebiruan (#6366f1) dan highlight oranye (#f97316) pada tombol utama.
-- **Gaya antarmuka**: Glassmorphism ringan, icon Material Symbols, tipografi Space Mono dan Google Sans. Watermark `logowatermark.png` muncul pada preview, hasil, dan frame GIF.
+- **Gaya antarmuka**: Glassmorphism ringan, icon Material Symbols, tipografi Space Mono dan Google Sans. Watermark `BytePlus.png` muncul pada preview, hasil, dan frame GIF.
 - **Tone**: Playful tetapi profesional; instruksi UI jelas sehingga pengguna dapat mengikuti alur tanpa pendampingan intensif.
 
 ## 3. Alur Pengalaman Pengguna
-1. **Layar sambutan**: Header menampilkan logo `DIGIOH_Logomark.svg` dan judul digiSelfie AI. Tombol `Mari Berfoto!` mengaktifkan kamera (tidak auto-start demi privasi).
+1. **Layar sambutan**: Header menampilkan logo `BytePlus.png` dan judul BytePlus Photobooth. Tombol `Mari Berfoto!` mengaktifkan kamera (tidak auto-start demi privasi).
 2. **Persiapan kamera**: Aplikasi mencoba resolusi tinggi lalu menurunkan ke medium atau default melalui `getUserMedia`. Orientasi portrait atau landscape dipilih otomatis, termasuk rotasi canvas bila diperlukan. Pesan error spesifik (izin ditolak, perangkat tidak ditemukan, browser tidak mendukung) disertai tombol coba lagi.
 3. **Pemilihan mode AI**: Grid gaya selalu terlihat di sisi kamera dengan nama serta emoji: Renaissance, Cartoon, Statue, Banana, 80s, 19th Century, Anime, Psychedelic, 8-bit, Big Beard, Comic Book, Old. Mode `Custom` membuka editor prompt yang tersimpan di Zustand agar konsisten antar sesi.
 4. **Pengambilan foto**: Tombol shutter memulai hitung mundur 3 detik, menyalakan flash overlay, dan menangkap frame sesuai rasio target. Foto disimpan sebagai JPEG 95 persen lengkap dengan metadata dimensi.

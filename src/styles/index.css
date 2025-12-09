@@ -219,7 +219,7 @@ button .icon {
 main {
   flex: 1 0 auto;
   width: 100%;
-  min-height: calc(100vh - var(--app-header-height));
+  min-height: 100vh;
   position: relative;
   z-index: 1;
   display: flex;
@@ -229,6 +229,15 @@ main {
   padding: clamp(16px, 2vw, 24px) 0 clamp(8px, 1.2vw, 12px);
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.cameraBackground {
+  background: #0b0f1a url('/DASHBOARD_BG Kosong Logo.png') center / cover no-repeat fixed;
+  min-height: 100vh;
+}
+
+.appHeader {
+  display: none !important;
 }
 
 @supports (height: 100dvh) {
@@ -255,8 +264,11 @@ main:has(.camera) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: clamp(16px, 2vw, 24px);
+  min-height: 100vh;
 }
+
 
 /* Mobile layout - OPTIMIZED FOR HEADER INTEGRATION */
 @media (max-width: 768px) {
@@ -600,6 +612,17 @@ main:has(.resultsPage) {
   box-shadow: none !important;
   border-radius: 0 !important;
   padding: 20px !important;
+}
+
+.resultsPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  background: linear-gradient(180deg, rgba(241, 245, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+  width: 100vw;
+  min-height: 100vh;
+  padding: clamp(12px, 3vw, 20px);
 }
 
 /* Ensure pageHeader is properly positioned */
@@ -1835,7 +1858,7 @@ main .canvasSection:first-child {
   border-radius: 20px;
   margin: 0;
   width: 100%;
-  max-width: var(--layout-max-width);
+  max-width: min(78vw, 480px);
   height: auto;
   min-height: 0;
   max-height: none;
@@ -1850,19 +1873,19 @@ main .canvasSection:first-child {
 
 .cameraModeSelector {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  left: 16px;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .cameraModeHeader {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -1999,7 +2022,7 @@ main .canvasSection:first-child {
 
 .watermarkOverlay {
   position: absolute;
-  bottom: clamp(12px, 5%, 24px);
+  top: clamp(12px, 5%, 24px);
   right: clamp(12px, 5%, 24px);
   width: clamp(120px, 18%, 210px);
   opacity: 0.75;
@@ -2014,7 +2037,7 @@ main .canvasSection:first-child {
 }
 
 .previewWatermark {
-  bottom: clamp(10px, 4%, 18px);
+  top: clamp(10px, 4%, 18px);
   right: clamp(10px, 4%, 18px);
   width: clamp(60px, 28%, 170px);
   opacity: 0.82;
@@ -2801,19 +2824,21 @@ main .canvasSection:first-child {
     position: absolute;
     top: 12px;
     bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    align-items: center;
-    justify-content: center;
+    left: 12px;
+    right: auto;
+    transform: none;
+    align-items: flex-start;
+    justify-content: flex-start;
     gap: 8px;
-    width: calc(100% - 24px);
+    width: auto;
+    flex-direction: column;
   }
 
   .cameraModeHeader {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
     gap: 8px;
   }
 
@@ -5579,18 +5604,19 @@ main .canvasSection:first-child {
 .photoResult {
   background: linear-gradient(135deg, rgba(207, 250, 254, 0.95) 0%, rgba(134, 239, 172, 0.95) 50%, rgba(56, 189, 248, 0.95) 100%);
   border-radius: 20px;
-  padding: 30px;
+  padding: 8px 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  width: 100%;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  width: min(74vw, 740px);
   max-width: 100%;
+  margin: 0 auto 12px;
 }
 
 .photoResult .photoComparison {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-bottom: 30px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .photoResult .photoSide {
@@ -5606,15 +5632,15 @@ main .canvasSection:first-child {
 
 .photoResult .photoSide img {
   width: 100% !important;
-  max-width: min(100%, 640px) !important;
+  max-width: min(100%, 420px) !important;
   height: auto !important;
-  max-height: min(88vh, 960px) !important;
+  max-height: min(80vh, 720px) !important;
   aspect-ratio: auto !important;
   object-fit: contain !important;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
   border-radius: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 0;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
   transition: all 0.3s ease;
   animation: photoSlideIn 0.8s ease-out;
   cursor: pointer;
@@ -5813,27 +5839,27 @@ main .canvasSection:first-child {
     background: rgba(255, 255, 255, 0.18);
   }
   
-  .resultPanel {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    padding: 22px 18px 26px;
-    box-shadow: 0 20px 36px rgba(15, 23, 42, 0.35);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
-    text-align: center;
-  }
+.resultPanel {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 22px 18px 26px;
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
 
 .resultPanel .photoSide img,
 .resultPanel .loadingPlaceholder,
 .photoResult .photoSide img,
 .photoResult .loadingPlaceholder {
-  max-height: min(70vh, 560px);
-  max-width: min(100%, 640px);
+  max-height: min(60vh, 480px);
+  max-width: min(90%, 520px);
   width: 100% !important;
-  height: clamp(300px, 80vh, 880px) !important;
+  height: auto !important;
   aspect-ratio: auto !important;
   object-fit: contain !important;
   background: rgba(0, 0, 0, 0.2);
@@ -5873,6 +5899,35 @@ main .canvasSection:first-child {
   justify-content: center;
   margin-top: 30px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .resultsPage {
+    padding: 12px 10px 18px;
+    gap: 14px;
+  }
+
+  .photoResult {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .photoResult .photoComparison {
+    gap: 10px;
+  }
+
+  .photoResult .photoSide img,
+  .photoResult .loadingPlaceholder {
+    max-height: 50vh;
+    max-width: 100%;
+  }
+}
+
+.printNote {
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
 }
 
 /* QR Code Modal Styles */
@@ -6078,6 +6133,31 @@ p, span, label, div {
   gap: 15px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+/* Final overrides for results sizing */
+.photoResult {
+  width: min(70vw, 660px);
+  margin: 0 auto;
+}
+
+.photoResult .photoComparison {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.photoResult .photoSide img,
+.photoResult .loadingPlaceholder {
+  width: 100% !important;
+  max-width: 340px !important;
+  max-height: 60vh !important;
+}
+
+/* Results background override */
+.resultsPage {
+  background: #0b0f1a url('/DASHBOARD_BG.png') center / cover no-repeat !important;
 }
 
 /* Responsive QR Modal */
@@ -6368,145 +6448,509 @@ p, span, label, div {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at top, #04152d, #020617 65%, #040d1f);
-  padding: clamp(24px, 4vw, 48px);
+  padding: clamp(24px, 5vw, 48px);
   text-align: center;
-  color: #f8fafc;
+  color: #0f172a;
+  background: #0b0f1a url('/DASHBOARD_BG.png') center / cover no-repeat fixed;
+}
+
+.landingScreen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.12) 100%);
+  z-index: 0;
 }
 
 .landingBackdrop {
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.6;
+  display: none;
 }
 
-.landingBackdrop--left {
-  background: #0ea5e9;
-  top: 15%;
-  left: 8%;
-}
-
-.landingBackdrop--right {
-  background: #f97316;
-  bottom: -8%;
-  right: 6%;
-}
-
-.landingCard {
-  width: min(520px, 100%);
-  background: rgba(6, 12, 24, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 28px;
-  padding: clamp(32px, 5vw, 52px);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(18px);
-  z-index: 1;
-}
-
-.landingBadge {
-  display: inline-flex;
-  padding: 6px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  margin-bottom: 20px;
-  opacity: 0.75;
-}
-
-.landingLogo {
+.landingContent {
+  width: min(520px, 96vw);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.landingLogo img {
-  width: 64px;
-  height: 64px;
-}
-
-.landingLogoTitle {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.landingLogo span {
-  font-size: 12px;
-  opacity: 0.65;
-}
-
-.landingTitle {
-  font-size: clamp(34px, 5vw, 46px);
-  margin-bottom: 8px;
-  color: #fefce8;
-  text-shadow: 0 12px 40px rgba(255, 157, 0, 0.35);
+  gap: 18px;
   text-align: center;
-  letter-spacing: 0.04em;
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 32px;
+  padding: clamp(12px, 3vw, 18px);
+  box-shadow: none;
+  position: relative;
+  z-index: 2;
 }
 
-.landingTitle span {
+.landingBrand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.landingBrandLogo {
+  width: clamp(160px, 45vw, 210px);
+  height: auto;
   display: block;
-  line-height: 1.2;
-}
-.landingSubtitle {
-  font-size: 16px;
-  opacity: 0.85;
-  margin-bottom: 32px;
 }
 
-.landingActions {
+.landingBrandTagline {
+  font-size: 14px;
+  color: #4b5563;
+  letter-spacing: 0.02em;
+}
+
+.landingButtons {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  margin: 6px 0 4px;
+  backdrop-filter: none;
+  padding: clamp(8px, 2vw, 12px);
+  border-radius: 28px;
+  background: transparent;
+}
+
+.landingImageButton {
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+  width: min(420px, 92vw);
+  margin: 0 auto;
+}
+
+.landingImageButton img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .landingButton {
   width: 100%;
-  padding: 18px 26px;
-  border-radius: 18px;
   border: none;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  display: inline-flex;
+  border-radius: 999px;
+  padding: 18px 22px;
+  min-height: 96px;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-content: space-between;
+  color: #fff;
+  text-align: left;
+  letter-spacing: 0.02em;
+  box-shadow: 0 24px 45px rgba(59, 130, 246, 0.26), 0 12px 24px rgba(124, 58, 237, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.landingButton.info {
+  background: linear-gradient(90deg, #1e40af 0%, #6d28d9 100%);
 }
 
 .landingButton.primary {
-  background: linear-gradient(120deg, #ffb703, #fb8500);
-  color: #0f172a;
-  box-shadow: 0 12px 25px rgba(251, 133, 0, 0.35);
-}
-
-.landingButton.secondary {
-  background: rgba(8, 145, 178, 0.14);
-  color: #e2e8f0;
-  border: 1px solid rgba(14, 165, 233, 0.4);
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
 }
 
 .landingButton:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
+  box-shadow: 0 30px 60px rgba(59, 130, 246, 0.26), 0 14px 28px rgba(124, 58, 237, 0.22);
+  filter: brightness(1.02);
 }
 
-.landingButton.primary:hover {
-  box-shadow: 0 18px 38px rgba(251, 133, 0, 0.45);
+.landingButton:active {
+  transform: translateY(-1px);
 }
 
-.landingButton:focus-visible {
-  outline: 2px solid rgba(148, 163, 184, 0.6);
-  outline-offset: 4px;
+.landingButtonMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
 }
+
+.landingLogoInline {
+  width: clamp(120px, 28vw, 180px);
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  display: block;
+  margin: 0 auto;
+}
+
+.landingMiniMark {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+}
+
+.landingMiniMark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.landingButtonText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.landingButtonTitle {
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.landingButtonSubtitle {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(222, 235, 255, 0.95);
+  letter-spacing: 0.14em;
+}
+
+.landingButtonBadge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1d4ed8;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.landingButton.primary .landingButtonBadge {
+  color: #6d28d9;
+}
+
+.infoEmbedCard {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+}
+
+.infoEmbedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #0f172a;
+  color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.infoBackButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: #1e3a8a;
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(30, 58, 138, 0.25);
+}
+
+.infoTimerHint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.infoEmbedBody {
+  flex: 1;
+  width: 100%;
+  background: #fff;
+  overflow: hidden;
+}
+
+.infoEmbedFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+
+.infoEmbedError {
+  background: #fff1f2;
+  color: #7f1d1d;
+  border-radius: 0;
+  padding: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.infoOpenExternal {
+  align-self: flex-start;
+  border: none;
+  background: #1d4ed8;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.landingPrompt {
+  display: none;
+}
+
+.landingQr {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 22px 40px rgba(99, 102, 241, 0.12);
+  margin-top: 2px;
+}
+
+.landingQr img {
+  display: block;
+  width: clamp(220px, 60vw, 280px);
+  height: clamp(220px, 60vw, 280px);
+  object-fit: contain;
+  border-radius: 14px;
+  border: 2px solid rgba(30, 64, 175, 0.75);
+  background: #fff;
+}
+
+.landingFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 4px;
+  color: #1f2937;
+}
+
+.landingLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.landingLink:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.landingLink .icon {
+  color: #1d4ed8;
+  font-size: 18px;
+}
+
+.landingSocialIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #e0e7ff;
+  display: grid;
+  place-items: center;
+  color: #1e3a8a;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .landingContent {
+    gap: 14px;
+    padding: 22px;
+  }
+
+  .landingBrandLogo {
+    width: clamp(150px, 60vw, 190px);
+  }
+
+  .landingButtons {
+    gap: 14px;
+  }
+
+  .landingButton {
+    min-height: 86px;
+    padding: 16px 18px;
+  }
+
+  .landingButtonTitle {
+    font-size: 16px;
+  }
+
+  .landingButtonSubtitle {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .landingButtonBadge {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .landingQr img {
+    width: clamp(220px, 72vw, 280px);
+    height: clamp(220px, 72vw, 280px);
+  }
+}
+
+
+
+
+
+
+
+
+/* Inline QR thumb and overlay */
+.qrInlineCard {
+  width: 180px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+  margin: 0 auto;
+}
+
+.qrInlineTitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.qrInlineImage {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 2px solid rgba(30, 64, 175, 0.2);
+  background: #fff;
+}
+
+.qrInlineImage--small {
+  width: 120px;
+  height: 120px;
+}
+
+.qrInlinePlaceholder {
+  width: 140px;
+  height: 140px;
+  border-radius: 12px;
+  border: 2px dashed rgba(30, 64, 175, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.qrInlineHint {
+  font-size: 12px;
+  color: #475569;
+}
+
+.qrOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.qrOverlayContent {
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.qrOverlayHeader {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.qrOverlayBody {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrOverlayImage {
+  width: clamp(220px, 60vw, 320px);
+  height: clamp(220px, 60vw, 320px);
+  object-fit: contain;
+}
+
+
+/* Camera centering override */
+main:has(.camera) {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  padding: clamp(16px, 3vw, 28px) clamp(12px, 4vw, 20px) !important;
+  gap: clamp(12px, 2vw, 20px) !important;
+}
+
+@media (max-width: 768px) {
+  main:has(.camera) {
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+  }
+
+  .camera {
+    max-width: min(88vw, 430px);
+    margin: 0 auto;
+  }
+}
+
+
 
 

@@ -17,6 +17,7 @@ const WATERMARK_FILE =
   process.env.WATERMARK_FILE_PATH
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
     : path.resolve(__dirname, '..', '..', '..', 'public', 'BytePlus.png')
+const WATERMARK_POSITION = String(process.env.WATERMARK_POSITION || 'top-right').toLowerCase()
 const UPLOAD_BASE_DIR =
   process.env.UPLOAD_BASE_DIR
     ? path.resolve(process.env.UPLOAD_BASE_DIR)
@@ -276,9 +277,22 @@ export async function addWatermark(inputPath, watermarkPath, outputPath) {
       .png()
       .toBuffer()
 
-    // Calculate position (bottom right corner with 20px margin)
-    const x = inputMetadata.width - watermarkWidth - 20
-    const y = inputMetadata.height - watermarkHeight - 20
+    // Calculate position based on env (default top-right)
+    const margin = 20
+    const computePosition = () => {
+      switch (WATERMARK_POSITION) {
+        case 'top-left':
+          return { x: margin, y: margin }
+        case 'bottom-left':
+          return { x: margin, y: inputMetadata.height - watermarkHeight - margin }
+        case 'bottom-right':
+          return { x: inputMetadata.width - watermarkWidth - margin, y: inputMetadata.height - watermarkHeight - margin }
+        case 'top-right':
+        default:
+          return { x: inputMetadata.width - watermarkWidth - margin, y: margin }
+      }
+    }
+    const { x, y } = computePosition()
 
     console.log(`📍 Watermark position: x=${x}, y=${y}`)
     console.log(`📏 Watermark size: ${watermarkWidth}x${watermarkHeight}`)

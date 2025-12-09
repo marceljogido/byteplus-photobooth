@@ -22,6 +22,7 @@ const WATERMARK_FILE =
   process.env.WATERMARK_FILE_PATH
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
     : path.resolve(__dirname, '..', '..', 'public', 'BytePlus.png')
+const WATERMARK_POSITION = String(process.env.WATERMARK_POSITION || 'top-right').toLowerCase()
 
 const ensureDir = dir => {
   if (!fs.existsSync(dir)) {
@@ -96,8 +97,26 @@ const applyWatermarkToBuffer = async (buffer, mimetype) => {
       Math.round(targetWidth * (watermarkMetadata.height / watermarkMetadata.width))
     )
     const margin = Math.max(10, Math.round(Math.min(imageMetadata.width, imageMetadata.height) * 0.04))
-    const left = Math.max(0, imageMetadata.width - targetWidth - margin)
-    const top = Math.max(0, imageMetadata.height - targetHeight - margin)
+    const computePosition = () => {
+      switch (WATERMARK_POSITION) {
+        case 'top-left':
+          return { left: margin, top: margin }
+        case 'bottom-left':
+          return { left: margin, top: Math.max(0, imageMetadata.height - targetHeight - margin) }
+        case 'bottom-right':
+          return {
+            left: Math.max(0, imageMetadata.width - targetWidth - margin),
+            top: Math.max(0, imageMetadata.height - targetHeight - margin)
+          }
+        case 'top-right':
+        default:
+          return {
+            left: Math.max(0, imageMetadata.width - targetWidth - margin),
+            top: margin
+          }
+      }
+    }
+    const { left, top } = computePosition()
 
     const watermarkBuffer = await sharp(WATERMARK_FILE)
       .resize(targetWidth, targetHeight, { fit: 'inside' })

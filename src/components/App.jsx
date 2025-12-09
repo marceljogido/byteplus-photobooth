@@ -262,6 +262,7 @@ export default function App() {
   const [printMessage, setPrintMessage] = useState('')
   const [showQrOverlay, setShowQrOverlay] = useState(false)
   const watermarkedOutputsRef = useRef({})
+  const cloudUrlsRef = useRef({})
   const infoTimeoutRef = useRef(null)
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -280,6 +281,9 @@ export default function App() {
   useEffect(() => {
     watermarkedOutputsRef.current = watermarkedOutputs
   }, [watermarkedOutputs])
+  useEffect(() => {
+    cloudUrlsRef.current = cloudUrls
+  }, [cloudUrls])
   useEffect(() => {
     const updateViewport = () => {
       if (typeof window === 'undefined') return
@@ -830,24 +834,7 @@ export default function App() {
         return false
       }
 
-      let photoData = watermarkedOutputsRef.current[photoId] || watermarkedOutputs[photoId]
-      if (!photoData && imageData.outputs[photoId]) {
-        try {
-          const generated = await buildWatermarkedPreview(imageData.outputs[photoId])
-          photoData = generated
-          watermarkedOutputsRef.current = {
-            ...watermarkedOutputsRef.current,
-            [photoId]: generated
-          }
-          setWatermarkedOutputs(current => ({
-            ...current,
-            [photoId]: generated
-          }))
-        } catch (error) {
-          console.warn('Failed to generate watermark on upload path:', error)
-          photoData = imageData.outputs[photoId]
-        }
-      }
+      const photoData = imageData.outputs[photoId]
       if (!photoData) {
         return false
       }
@@ -1043,7 +1030,7 @@ export default function App() {
 
     setShowDownloadModal(true)
   }
-  const handlePrintClick = () => {
+  const handlePrintClick = async () => {
     if (!currentPhotoId) {
       alert('? Foto tidak tersedia. Silakan ambil foto terlebih dahulu.')
       return
@@ -1053,95 +1040,72 @@ export default function App() {
       alert('? Foto masih dipoles AI. Tunggu sejenak ya!')
       return
     }
-    const printSrc =
-      watermarkedOutputs[currentPhotoId] || imageData.outputs[currentPhotoId] || null
+    let printSrc = cloudUrlsRef.current[currentPhotoId] || null
+    if (!printSrc) {
+      try {
+        await prepareDownloadsForPhoto(currentPhotoId, {force: true})
+        printSrc = cloudUrlsRef.current[currentPhotoId]
+      } catch {
+        // ignore
+      }
+    }
+    if (!printSrc && imageData.outputs[currentPhotoId]) {
+      try {
+        const uploadResult = await generateQRCodeFor(
+          imageData.outputs[currentPhotoId],
+          `digioh-photobox-print-${Date.now()}.jpg`,
+          `${currentPhotoId}-print`
+        )
+        if (uploadResult?.directUrl) {
+          printSrc = uploadResult.directUrl
+          setCloudUrls(prev => ({...prev, [currentPhotoId]: uploadResult.directUrl}))
+        }
+      } catch (error) {
+        console.error('Print upload failed:', error)
+      }
+    }
     if (!printSrc) {
       alert('? Hasil AI belum siap untuk dicetak.')
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
-    if (typeof document === 'undefined' || !document.body) {
-      alert('Dokumen tidak siap untuk cetak.')
-      setPrintMessage('Dokumen tidak siap untuk cetak.')
+    if (!printSrc) {
+      alert('? Hasil AI belum siap untuk dicetak.')
+      setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
-    setPrintMessage('Menyiapkan cetak 4x6 dengan margin 3mm...')
-    const iframe = document.createElement('iframe')
-    iframe.setAttribute('aria-hidden', 'true')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
-    iframe.style.border = '0'
-    iframe.style.visibility = 'hidden'
-    document.body.appendChild(iframe)
-
-    const doc = iframe.contentWindow?.document
-    if (!doc) {
-      alert('Gagal membuka jendela cetak.')
-      iframe.remove()
+    const sizeCss = '4in 6in'
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
+    if (!printWindow) {
+      alert('Popup diblokir, izinkan popup untuk mencetak.')
       return
     }
-
-    doc.open()
-    doc.write(`<!doctype html>
+    setPrintMessage('Membuka tab print 4x6 tanpa margin...')
+    printWindow.document.open()
+    printWindow.document.write(`<!doctype html>
 <html>
   <head>
     <title>Print Photo</title>
     <style>
-      @page { size: 4in 6in; margin: 3mm; }
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background: #fff;
-      }
-      body {
-        padding: 3mm;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      @page { size: ${sizeCss}; margin: 0; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
+      img { width: 100vw; height: 100vh; object-fit: cover; display: block; }
     </style>
   </head>
   <body>
     <img id="print-image" src="${printSrc}" alt="AI Photo" />
     <script>
       const img = document.getElementById('print-image');
-      img.onload = () => {
-        setTimeout(() => {
-          window.focus();
-          window.print();
-        }, 60);
-      };
+      img.onload = () => setTimeout(() => { window.print(); }, 100);
       img.onerror = () => {
         alert('Gagal memuat gambar untuk dicetak.');
-        window.opener?.postMessage({type: 'print-error'}, '*');
-        setTimeout(() => window.close(), 200);
-      };
-      window.onafterprint = () => {
-        window.opener?.postMessage({type: 'print-done'}, '*');
-        setTimeout(() => window.close(), 200);
+        setTimeout(() => window.close(), 300);
       };
     <\\/script>
   </body>
 </html>`)
-    doc.close()
-    const handleMsg = event => {
-      if (event?.data?.type === 'print-done') {
-        setPrintMessage('Membuka dialog print 4x6. Jika tidak muncul, izinkan popup atau gunakan mode kiosk-printing.')
-      } else if (event?.data?.type === 'print-error') {
-        setPrintMessage('Gagal memuat gambar untuk dicetak.')
-      }
-    }
-    window.addEventListener('message', handleMsg, {once: true})
+    printWindow.document.close()
   }
   const handleModeHover = useCallback((modeInfo, event) => {
     if (!modeInfo) {
@@ -1399,7 +1363,7 @@ export default function App() {
                     {(isProcessingPhoto || photos.find(p => p.id === currentPhotoId)?.isBusy) ? (
                       <div className="processingStatus">
                         <div className="spinner"></div>
-                        <p>Foto Anda sedang diproses dengan BytePluss AI.</p>
+                        <p>Foto Anda sedang diproses dengan BytePlus AI.</p>
                       </div>
                     ) : (
                       <div className="readyStatus">

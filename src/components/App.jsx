@@ -1155,27 +1155,6 @@ export default function App() {
       return
     }
 
-    // Buka jendela print lebih awal (supaya tidak diblokir popup)
-    const ensurePrintWindow = () => {
-      try {
-        const win = window.open('', 'photobooth-print', 'noopener,noreferrer')
-        if (win && !win.closed) {
-          win.document.open()
-          win.document.write('<!doctype html><html><body style="margin:0;font-family:sans-serif;padding:16px;">Menyiapkan gambar untuk print...</body></html>')
-          win.document.close()
-        }
-        return win
-      } catch {
-        return null
-      }
-    }
-
-    const printWindow = ensurePrintWindow()
-    if (!printWindow || printWindow.closed) {
-      alert('Popup diblokir, izinkan popup untuk mencetak.')
-      return
-    }
-
     let printSrc = cloudUrlsRef.current[currentPhotoId] || null
     if (!printSrc) {
       try {
@@ -1203,15 +1182,37 @@ export default function App() {
     if (!printSrc) {
       alert('? Hasil AI belum siap untuk dicetak.')
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
-      try {
-        printWindow.document.body.innerHTML = '<p style="padding:16px;font-family:sans-serif;">Hasil AI belum siap untuk dicetak.</p>'
-      } catch {
-        // ignore
-      }
       return
     }
-    // Buka satu tab khusus dengan gambar (URL sama dengan QR) dan auto-print
+    // Coba QZ Tray (tanpa membuka tab)
+    try {
+      const qz = await ensureQZConnection()
+      const printer = await qz.printers.getDefault()
+      if (!printer) {
+        throw new Error('Printer default tidak ditemukan')
+      }
+      const config = qz.configs.create(printer, {
+        copies: 1,
+        size: { width: 6, height: 4, units: 'in' },
+        margins: 0,
+        rasterize: true
+      })
+      setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
+      await qz.print(config, [{ type: 'image', data: printSrc }])
+      setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
+      return
+    } catch (err) {
+      console.warn('QZ Tray print gagal, fallback ke tab print:', err)
+      setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
+    }
+
+    // Fallback: satu tab print-friendly dengan URL upload (sama dengan QR)
     const sizeCss = '4in 6in'
+    const printWindow = window.open('', 'photobooth-print', 'noopener,noreferrer')
+    if (!printWindow || printWindow.closed) {
+      alert('Popup diblokir, izinkan popup untuk mencetak.')
+      return
+    }
     setPrintMessage('Membuka tab gambar (QR) dan memicu print. Jika gagal, tekan Ctrl+P / Cmd+P.')
     try {
       printWindow.document.open()

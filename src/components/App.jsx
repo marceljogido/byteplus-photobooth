@@ -23,6 +23,16 @@ const ctx = canvas.getContext('2d')
 const modeKeys = Object.keys(modes)
 const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
 const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
+const WATERMARK_MAP = {
+  strangerthings: {position: 'top-center', scale: 0.3, variant: 'putih'},
+  f1racing: {position: 'top-center', scale: 0.2, variant: 'putih'},
+  retroanime: {position: 'top-left', scale: 0.2, variant: 'hitam'},
+  beach: {position: 'top-left', scale: 0.2, variant: 'hitam'},
+  byteplus: {position: 'top-left', scale: 0.2, variant: 'putih'},
+  byteplusactionbox: {position: 'bottom-center', scale: 0.25, variant: 'putih'},
+  byteplusprinterbadge: {position: 'bottom-center', scale: 0.25, variant: 'putih'}
+}
+const DEFAULT_WATERMARK = {position: 'top-right', scale: 0.22, variant: 'putih'}
 const QZ_CERT_ENDPOINT = import.meta.env.VITE_QZ_CERT_ENDPOINT || '/api/qz/cert'
 const QZ_SIGN_ENDPOINT = import.meta.env.VITE_QZ_SIGN_ENDPOINT || '/api/qz/sign'
 const QZ_ALLOW_UNSIGNED =
@@ -138,11 +148,16 @@ const getWatermarkImage = async () => {
   return watermarkPreviewPromise
 }
 
-const getMimeTypeFromDataUrl = dataUrl => {
-  const match = typeof dataUrl === 'string'
-    ? dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);/)
-    : null
-  return match ? match[1] : 'image/png'
+  const getMimeTypeFromDataUrl = dataUrl => {
+    const match = typeof dataUrl === 'string'
+      ? dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);/)
+      : null
+    return match ? match[1] : 'image/png'
+  }
+
+const getWatermarkSettingsForMode = modeKey => {
+  if (!modeKey) return DEFAULT_WATERMARK
+  return WATERMARK_MAP[modeKey] || DEFAULT_WATERMARK
 }
 
 const loadQZ = () =>
@@ -200,38 +215,12 @@ const requestQZSignature = payload =>
 
 const ensureQZConnection = async () => {
   const qz = await loadQZ()
-  // For kiosk/local use: allow unsigned (must be enabled in QZ Tray settings)
+  // Dev/kiosk: allow unsigned, skip cert/signature (origin must be whitelisted; block anonymous off)
   if (qz.security?.setCertificatePromise) {
-    qz.security.setCertificatePromise((resolve, reject) => {
-      if (QZ_ALLOW_UNSIGNED) {
-        resolve()
-        return
-      }
-      fetchQZCertificate()
-        .then(resolve)
-        .catch(error => {
-          console.warn('QZ certificate unavailable; enable unsigned mode or configure QZ_CERTIFICATE.', error)
-          if (QZ_ALLOW_UNSIGNED) {
-            resolve()
-          } else {
-            reject(error)
-          }
-        })
-    })
+    qz.security.setCertificatePromise(() => Promise.resolve(''))
   }
   if (qz.security?.setSignaturePromise) {
-    qz.security.setSignaturePromise(toSign => {
-      if (QZ_ALLOW_UNSIGNED) {
-        return Promise.resolve()
-      }
-      return requestQZSignature(toSign).catch(error => {
-        console.warn('QZ signature request failed. Enable unsigned mode or configure QZ_PRIVATE_KEY.', error)
-        if (QZ_ALLOW_UNSIGNED) {
-          return
-        }
-        throw error
-      })
-    })
+    qz.security.setSignaturePromise(() => Promise.resolve(''))
   }
   if (!qz.websocket.isActive()) {
     await qz.websocket.connect()
@@ -769,53 +758,60 @@ export default function App() {
       setIsLoading(false)
     }
   }
-  const uploadToStorage = async (imageUrl, filename) => {
-    debugLog('📤 Starting upload for:', filename)
-    debugLog('🔍 Image URL type:', imageUrl.startsWith('data:') ? 'Base64' : 'URL')
-    
+    const uploadToStorage = async (imageUrl, filename, watermarkOptions = {}) => {
+    debugLog('Starting upload for:', filename)
+    debugLog('Image URL type:', imageUrl.startsWith('data:') ? 'Base64' : 'URL')
+
     try {
-      // Convert base64 to blob
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-      debugLog('📦 Blob created, size:', blob.size)
-      
-      // Upload ke backend storage
+      debugLog('Blob created, size:', blob.size)
+
       const formData = new FormData()
       formData.append('file', blob, filename)
       formData.append('name', filename)
-      
+      if (watermarkOptions.position) {
+        formData.append('watermarkPosition', watermarkOptions.position)
+      }
+      if (Number.isFinite(watermarkOptions.scale)) {
+        formData.append('watermarkScale', String(watermarkOptions.scale))
+      }
+      if (watermarkOptions.variant) {
+        formData.append('watermarkVariant', watermarkOptions.variant)
+      }
+
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       })
-      
-      debugLog('📡 Upload response status:', uploadResponse.status)
-      
+
+      debugLog('Upload response status:', uploadResponse.status)
+
       if (uploadResponse.ok) {
         const result = await uploadResponse.json()
         if (result.success && result.directLink) {
-          debugLog('✅ Upload successful:', result.directLink)
+          debugLog('Upload successful:', result.directLink)
           return {
             url: result.directLink,
             qrCode: result.qrCode
           }
         }
       }
-      
+
       throw new Error('Upload failed')
     } catch (error) {
       console.error('Error uploading to storage:', error)
       throw error
     }
   }
-  const generateQRCodeFor = async (imageUrl, filename = null, cacheKey = null) => {
+  const generateQRCodeFor = async (imageUrl, filename = null, cacheKey = null, watermarkOptions = {}) => {
     debugLog('🧾 generateQRCodeFor called:', {filename, cacheKey})
     debugLog('🌐 Image URL for QR:', imageUrl)
     
     const defaultFilename = filename || `digioh-photobooth-${Date.now()}.jpg`
     
     try {
-      const uploadResult = await uploadToStorage(imageUrl, defaultFilename)
+      const uploadResult = await uploadToStorage(imageUrl, defaultFilename, watermarkOptions)
       let qrCodeDataURL = uploadResult.qrCode
       
       if (!qrCodeDataURL) {
@@ -975,12 +971,14 @@ export default function App() {
           return false
         }
 
+        const wmSettings = getWatermarkSettingsForPhoto(photoId)
         const photoResult = photoReady
           ? {qrCode: qrCodes.photo, directUrl: cloudUrls[photoId]}
           : await generateQRCodeFor(
               photoData,
               `digioh-photobooth-foto-${Date.now()}.jpg`,
-              photoId
+              photoId,
+              wmSettings
             )
 
         if (uploadTokenRef.current !== token) {
@@ -1166,10 +1164,12 @@ export default function App() {
     }
     if (!printSrc && imageData.outputs[currentPhotoId]) {
       try {
+        const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
         const uploadResult = await generateQRCodeFor(
           imageData.outputs[currentPhotoId],
           `digioh-photobox-print-${Date.now()}.jpg`,
-          `${currentPhotoId}-print`
+          `${currentPhotoId}-print`,
+          wmSettings
         )
         if (uploadResult?.directUrl) {
           printSrc = uploadResult.directUrl
@@ -1283,6 +1283,11 @@ export default function App() {
   const currentPhoto = currentPhotoId
     ? photos.find(photo => photo.id === currentPhotoId)
     : null
+  const getWatermarkSettingsForPhoto = photoId => {
+    const photo = photoId ? photos.find(p => p.id === photoId) : null
+    const modeKey = photo?.mode || activeMode
+    return getWatermarkSettingsForMode(modeKey)
+  }
   const aiPhotoSrc = currentPhotoId
     ? (watermarkedOutputs[currentPhotoId] || imageData.outputs[currentPhotoId] || null)
     : null
@@ -1555,7 +1560,7 @@ export default function App() {
               <span className="dot dot-2"></span>
               <span className="dot dot-3"></span>
             </div>
-            <h3 className="aiProcessingTitle">Foto Anda sedang diproses dengan BytePluss AI.</h3>
+            <h3 className="aiProcessingTitle">Foto Anda sedang diproses BytePlus AI.</h3>
             <p className="aiProcessingSubtitle">
               Harap menunggu, pratinjau akan siap segera.
             </p>

@@ -23,7 +23,10 @@ const WATERMARK_FILE =
   process.env.WATERMARK_FILE_PATH
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
     : path.resolve(__dirname, '..', '..', 'public', 'BytePlus.png')
+const WATERMARK_FILE_WHITE = path.resolve(__dirname, '..', '..', 'public', 'watermark-putih.png')
+const WATERMARK_FILE_BLACK = path.resolve(__dirname, '..', '..', 'public', 'watermark-hitam.png')
 const WATERMARK_POSITION = String(process.env.WATERMARK_POSITION || 'top-right').toLowerCase()
+const WATERMARK_VARIANT = String(process.env.WATERMARK_VARIANT || 'putih').toLowerCase()
 const normalizePem = value =>
   (value || '')
     .replace(/\\n/g, '\n')
@@ -145,7 +148,20 @@ const shouldWatermarkMimetype = mimetype => {
   return normalized.startsWith('image/') && normalized !== 'image/gif'
 }
 
-const applyWatermarkToBuffer = async (buffer, mimetype) => {
+const resolveWatermarkPath = variant => {
+  const desired =
+    variant === 'hitam'
+      ? WATERMARK_FILE_BLACK
+      : variant === 'putih'
+      ? WATERMARK_FILE_WHITE
+      : WATERMARK_FILE
+  if (desired && fs.existsSync(desired)) return desired
+  if (fs.existsSync(WATERMARK_FILE_WHITE)) return WATERMARK_FILE_WHITE
+  if (fs.existsSync(WATERMARK_FILE_BLACK)) return WATERMARK_FILE_BLACK
+  return WATERMARK_FILE
+}
+
+const applyWatermarkToBuffer = async (buffer, mimetype, options = {}) => {
   const watermarkAvailable = fs.existsSync(WATERMARK_FILE)
   if (!watermarkAvailable) {
     return buffer
@@ -165,27 +181,37 @@ const applyWatermarkToBuffer = async (buffer, mimetype) => {
       return buffer
     }
 
-    const watermarkMetadata = await sharp(WATERMARK_FILE).metadata()
+    const watermarkPath = resolveWatermarkPath(options.variant || WATERMARK_VARIANT)
+    const watermarkMetadata = await sharp(watermarkPath).metadata()
     if (!watermarkMetadata?.width || !watermarkMetadata?.height) {
       console.warn('[watermark] Unable to read watermark metadata; skipping.')
       return buffer
     }
 
-    const targetWidth = Math.max(1, Math.round(imageMetadata.width * 0.2))
+    const scale = Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 0.2
+    const targetWidth = Math.max(1, Math.round(imageMetadata.width * scale))
     const targetHeight = Math.max(
       1,
       Math.round(targetWidth * (watermarkMetadata.height / watermarkMetadata.width))
     )
     const margin = Math.max(10, Math.round(Math.min(imageMetadata.width, imageMetadata.height) * 0.04))
     const computePosition = () => {
-      switch (WATERMARK_POSITION) {
+      const position = (options.position || WATERMARK_POSITION || '').toLowerCase()
+      switch (position) {
         case 'top-left':
           return { left: margin, top: margin }
+        case 'top-center':
+          return { left: Math.max(0, Math.round((imageMetadata.width - targetWidth) / 2)), top: margin }
         case 'bottom-left':
           return { left: margin, top: Math.max(0, imageMetadata.height - targetHeight - margin) }
         case 'bottom-right':
           return {
             left: Math.max(0, imageMetadata.width - targetWidth - margin),
+            top: Math.max(0, imageMetadata.height - targetHeight - margin)
+          }
+        case 'bottom-center':
+          return {
+            left: Math.max(0, Math.round((imageMetadata.width - targetWidth) / 2)),
             top: Math.max(0, imageMetadata.height - targetHeight - margin)
           }
         case 'top-right':
@@ -198,7 +224,7 @@ const applyWatermarkToBuffer = async (buffer, mimetype) => {
     }
     const { left, top } = computePosition()
 
-    const watermarkBuffer = await sharp(WATERMARK_FILE)
+    const watermarkBuffer = await sharp(watermarkPath)
       .resize(targetWidth, targetHeight, { fit: 'inside' })
       .png()
       .toBuffer()
@@ -246,9 +272,19 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
   try {
     ensureDir(targetDir)
+    const wmPosition =
+      (req.body?.watermarkPosition || WATERMARK_POSITION || '').toLowerCase()
+    const wmVariant = (req.body?.watermarkVariant || WATERMARK_VARIANT || '').toLowerCase()
+    const wmScaleRaw = req.body?.watermarkScale
+    const wmScale = typeof wmScaleRaw === 'string' ? parseFloat(wmScaleRaw) : Number(wmScaleRaw)
+
     const fileBuffer = isGif
       ? req.file.buffer
-      : await applyWatermarkToBuffer(req.file.buffer, req.file.mimetype)
+      : await applyWatermarkToBuffer(req.file.buffer, req.file.mimetype, {
+          position: wmPosition,
+          variant: wmVariant,
+          scale: wmScale
+        })
     fs.writeFileSync(localPath, fileBuffer)
 
     console.log('[upload] File saved locally:', localPath)

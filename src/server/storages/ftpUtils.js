@@ -283,10 +283,14 @@ export async function addWatermark(inputPath, watermarkPath, outputPath) {
       switch (WATERMARK_POSITION) {
         case 'top-left':
           return { x: margin, y: margin }
+        case 'top-center':
+          return { x: Math.max(0, Math.round((inputMetadata.width - watermarkWidth) / 2)), y: margin }
         case 'bottom-left':
           return { x: margin, y: inputMetadata.height - watermarkHeight - margin }
         case 'bottom-right':
           return { x: inputMetadata.width - watermarkWidth - margin, y: inputMetadata.height - watermarkHeight - margin }
+        case 'bottom-center':
+          return { x: Math.max(0, Math.round((inputMetadata.width - watermarkWidth) / 2)), y: inputMetadata.height - watermarkHeight - margin }
         case 'top-right':
         default:
           return { x: inputMetadata.width - watermarkWidth - margin, y: margin }

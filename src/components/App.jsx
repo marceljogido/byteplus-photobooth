@@ -1184,6 +1184,17 @@ export default function App() {
       return
     }
     // Try QZ Tray first (no popup)
+    // Pre-open fallback window in the same user gesture to avoid popup-blockers when we need it
+    let fallbackWindow = null
+    try {
+      fallbackWindow = window.open('', 'photobooth-print', 'noopener,noreferrer')
+    } catch {
+      // ignore
+    }
+    if (!fallbackWindow) {
+      setPrintMessage('Popup diblokir; izinkan pop-up agar bisa cetak jika QZ Tray offline.')
+    }
+
     try {
       const qz = await ensureQZConnection()
       const printer = await qz.printers.getDefault()
@@ -1199,6 +1210,13 @@ export default function App() {
       setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
       await qz.print(config, [{ type: 'image', data: printSrc }])
       setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
+      if (fallbackWindow && !fallbackWindow.closed) {
+        try {
+          fallbackWindow.close()
+        } catch {
+          // ignore
+        }
+      }
       return
     } catch (err) {
       console.warn('QZ Tray print gagal, fallback ke tab print:', err)
@@ -1207,7 +1225,7 @@ export default function App() {
 
     // Fallback: open print tab (needs popup allowed)
     const sizeCss = '4in 6in'
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
+    const printWindow = fallbackWindow || window.open('', 'photobooth-print', 'noopener,noreferrer')
     if (!printWindow) {
       alert('Popup diblokir, izinkan popup untuk mencetak.')
       return

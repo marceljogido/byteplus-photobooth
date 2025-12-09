@@ -44,6 +44,13 @@ Booth swafoto interaktif yang memadukan kamera langsung dengan transformasi arti
 
 Antarmuka secara default dapat diakses di `http://localhost:5173`, sedangkan backend Express berada di `http://localhost:3001`.
 
+## Cetak via QZ Tray
+- Pasang QZ Tray di mesin kiosk/printer lalu jalankan sampai ikon tray aktif.
+- Siapkan sertifikat + private key untuk QZ (lihat panduan resmi QZ "Creating a Certificate"). Tempel PEM ke `.env` dengan `\n` sebagai newline: `QZ_CERTIFICATE="-----BEGIN...\n..."`, `QZ_PRIVATE_KEY="-----BEGIN...\n..."`. Atau simpan sebagai file lalu set `QZ_CERT_FILE=./config/qz-cert.pem` dan `QZ_PRIVATE_KEY_FILE=./config/qz-key.pem`.
+- Endpoint default untuk frontend mengambil sertifikat dan tanda tangan: `VITE_QZ_CERT_ENDPOINT=/api/qz/cert`, `VITE_QZ_SIGN_ENDPOINT=/api/qz/sign`. Private key hanya dibaca server untuk signing.
+- Jika ingin cepat tanpa signature, set `VITE_QZ_ALLOW_UNSIGNED=true` **dan** aktifkan 'Allow unsigned requests' di QZ Tray (kurangi keamanan).
+- Klik tombol Print: aplikasi mencoba QZ Tray (4x6 borderless). Jika tidak tersambung atau gagal, otomatis fallback ke tab print browser.
+
 ## Struktur Proyek Singkat
 - `src/components/App.jsx` – alur utama UI kamera, pemilihan mode, preview, serta modal download.
 - `src/lib/actions.js` – logika pemrosesan foto, integrasi Gemini, dan pembuatan GIF.

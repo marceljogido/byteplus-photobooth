@@ -23,6 +23,12 @@ const ctx = canvas.getContext('2d')
 const modeKeys = Object.keys(modes)
 const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
 const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
+const QZ_CERT_ENDPOINT = import.meta.env.VITE_QZ_CERT_ENDPOINT || '/api/qz/cert'
+const QZ_SIGN_ENDPOINT = import.meta.env.VITE_QZ_SIGN_ENDPOINT || '/api/qz/sign'
+const QZ_ALLOW_UNSIGNED =
+  String(import.meta.env?.VITE_QZ_ALLOW_UNSIGNED ?? '')
+    .trim()
+    .toLowerCase() === 'true'
 
 const DEBUG_LOGS_ENABLED =
   String(import.meta.env?.VITE_DEBUG_LOGS ?? '').trim().toLowerCase() === 'true'
@@ -157,14 +163,75 @@ const loadQZ = () =>
     document.head.appendChild(script)
   })
 
+let qzCertificatePromise = null
+
+const fetchQZCertificate = () => {
+  if (!qzCertificatePromise) {
+    qzCertificatePromise = fetch(QZ_CERT_ENDPOINT, { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`QZ certificate endpoint status ${response.status}`)
+        }
+        return response.text()
+      })
+      .catch(error => {
+        qzCertificatePromise = null
+        throw error
+      })
+  }
+  return qzCertificatePromise
+}
+
+const requestQZSignature = payload =>
+  fetch(QZ_SIGN_ENDPOINT, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({payload})
+  }).then(async response => {
+    if (!response.ok) {
+      throw new Error(`QZ sign endpoint status ${response.status}`)
+    }
+    const data = await response.json()
+    if (!data?.signature) {
+      throw new Error('QZ sign endpoint did not return signature')
+    }
+    return data.signature
+  })
+
 const ensureQZConnection = async () => {
   const qz = await loadQZ()
   // For kiosk/local use: allow unsigned (must be enabled in QZ Tray settings)
   if (qz.security?.setCertificatePromise) {
-    qz.security.setCertificatePromise(resolve => resolve())
+    qz.security.setCertificatePromise((resolve, reject) => {
+      if (QZ_ALLOW_UNSIGNED) {
+        resolve()
+        return
+      }
+      fetchQZCertificate()
+        .then(resolve)
+        .catch(error => {
+          console.warn('QZ certificate unavailable; enable unsigned mode or configure QZ_CERTIFICATE.', error)
+          if (QZ_ALLOW_UNSIGNED) {
+            resolve()
+          } else {
+            reject(error)
+          }
+        })
+    })
   }
   if (qz.security?.setSignaturePromise) {
-    qz.security.setSignaturePromise((toSign, resolve) => resolve())
+    qz.security.setSignaturePromise(toSign => {
+      if (QZ_ALLOW_UNSIGNED) {
+        return Promise.resolve()
+      }
+      return requestQZSignature(toSign).catch(error => {
+        console.warn('QZ signature request failed. Enable unsigned mode or configure QZ_PRIVATE_KEY.', error)
+        if (QZ_ALLOW_UNSIGNED) {
+          return
+        }
+        throw error
+      })
+    })
   }
   if (!qz.websocket.isActive()) {
     await qz.websocket.connect()
@@ -1135,6 +1202,7 @@ export default function App() {
       return
     } catch (err) {
       console.warn('QZ Tray print gagal, fallback ke tab print:', err)
+      setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
     }
 
     // Fallback: open print tab (needs popup allowed)

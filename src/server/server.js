@@ -3,6 +3,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import crypto from 'crypto'
 import dotenv from 'dotenv'
 import QRCode from 'qrcode'
 import sharp from 'sharp'
@@ -23,6 +24,43 @@ const WATERMARK_FILE =
     ? path.resolve(process.env.WATERMARK_FILE_PATH)
     : path.resolve(__dirname, '..', '..', 'public', 'BytePlus.png')
 const WATERMARK_POSITION = String(process.env.WATERMARK_POSITION || 'top-right').toLowerCase()
+const normalizePem = value =>
+  (value || '')
+    .replace(/\\n/g, '\n')
+    .trim()
+
+const readPemFromFile = filePath => {
+  if (!filePath) return ''
+  try {
+    const content = fs.readFileSync(path.resolve(filePath), 'utf8')
+    return content.trim()
+  } catch (error) {
+    console.warn(`[qz] Unable to read PEM file ${filePath}:`, error.message)
+    return ''
+  }
+}
+
+const resolvePem = (inlineValue, filePath, label) => {
+  const normalized = normalizePem(inlineValue)
+  if (normalized) return normalized
+  const fileContent = readPemFromFile(filePath)
+  if (fileContent) return fileContent
+  if (filePath) {
+    console.warn(`[qz] ${label} file provided but empty/unreadable: ${filePath}`)
+  }
+  return ''
+}
+
+const QZ_CERTIFICATE = resolvePem(
+  process.env.QZ_CERTIFICATE,
+  process.env.QZ_CERT_FILE,
+  'certificate'
+)
+const QZ_PRIVATE_KEY = resolvePem(
+  process.env.QZ_PRIVATE_KEY,
+  process.env.QZ_PRIVATE_KEY_FILE,
+  'private key'
+)
 
 const ensureDir = dir => {
   if (!fs.existsSync(dir)) {
@@ -58,6 +96,48 @@ const upload = multer({
 })
 
 console.log(`[storage] Provider: local (hardcoded)`)
+if (QZ_CERTIFICATE) {
+  console.log(
+    `[qz] Certificate configured via ${
+      process.env.QZ_CERTIFICATE ? 'QZ_CERTIFICATE' : 'QZ_CERT_FILE'
+    }`
+  )
+}
+if (QZ_PRIVATE_KEY) {
+  console.log(
+    `[qz] Private key configured via ${
+      process.env.QZ_PRIVATE_KEY ? 'QZ_PRIVATE_KEY' : 'QZ_PRIVATE_KEY_FILE'
+    }`
+  )
+}
+
+app.get('/api/qz/cert', (req, res) => {
+  if (!QZ_CERTIFICATE) {
+    return res.status(404).json({ error: 'QZ certificate not configured' })
+  }
+  res.type('text/plain').send(QZ_CERTIFICATE)
+})
+
+app.post('/api/qz/sign', (req, res) => {
+  if (!QZ_PRIVATE_KEY) {
+    return res.status(400).json({ error: 'QZ private key not configured' })
+  }
+  const payload = req.body?.payload
+  if (!payload || typeof payload !== 'string') {
+    return res.status(400).json({ error: 'Missing payload for signing' })
+  }
+
+  try {
+    const signer = crypto.createSign('sha256')
+    signer.update(payload)
+    signer.end()
+    const signature = signer.sign(QZ_PRIVATE_KEY, 'base64')
+    return res.json({ signature })
+  } catch (error) {
+    console.error('[qz] Failed to sign payload:', error)
+    return res.status(500).json({ error: 'Unable to sign payload' })
+  }
+})
 
 const shouldWatermarkMimetype = mimetype => {
   if (!mimetype) return true

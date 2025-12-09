@@ -1183,22 +1183,14 @@ export default function App() {
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
-    // Langsung buka link (sama dengan URL di QR). User tekan Ctrl+P / Cmd+P untuk cetak.
-    const directTab = window.open(printSrc, 'photobooth-print', 'noopener,noreferrer')
-    if (directTab) {
-      setPrintMessage('Membuka link gambar (QR) untuk dicetak. Tekan Ctrl+P / Cmd+P. Jika terblokir, izinkan pop-up.')
-      directTab.focus?.()
-      return
-    }
-
-    // Last resort: embed in a print-friendly page
+    // Buka satu tab khusus dengan gambar (URL sama dengan QR) dan auto-print
     const sizeCss = '4in 6in'
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
-    if (!printWindow) {
+    const printWindow = window.open('', 'photobooth-print', 'noopener,noreferrer')
+    if (!printWindow || printWindow.closed) {
       alert('Popup diblokir, izinkan popup untuk mencetak.')
       return
     }
-    setPrintMessage('Membuka tab print 4x6 tanpa margin...')
+    setPrintMessage('Membuka tab gambar (QR) dan memicu print. Jika gagal, tekan Ctrl+P / Cmd+P.')
     printWindow.document.open()
     printWindow.document.write(`<!doctype html>
 <html>
@@ -1229,6 +1221,11 @@ export default function App() {
   </body>
 </html>`)
     printWindow.document.close()
+    try {
+      printWindow.focus()
+    } catch {
+      // ignore
+    }
   }
   const handleModeHover = useCallback((modeInfo, event) => {
     if (!modeInfo) {

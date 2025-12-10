@@ -33,6 +33,16 @@ const WATERMARK_MAP = {
   byteplusprinterbadge: {position: 'bottom-center', scale: 0.25, variant: 'putih'}
 }
 const DEFAULT_WATERMARK = {position: 'top-right', scale: 0.22, variant: 'putih'}
+// Optional thumbnail previews for mode buttons (place images in public/thumbnails/<key>.jpg or .png)
+const MODE_THUMBNAILS = {
+  strangerthings: '/thumbnails/strangerthings.jpg',
+  retroanime: '/thumbnails/retroanime.jpg',
+  beach: '/thumbnails/beach.jpg',
+  f1racing: '/thumbnails/f1racing.jpg',
+  byteplus: '/thumbnails/byteplus.jpg',
+  byteplusactionbox: '/thumbnails/byteplusactionbox.jpg',
+  byteplusprinterbadge: '/thumbnails/byteplusprinterbadge.jpg'
+}
 const QZ_CERT_ENDPOINT = import.meta.env.VITE_QZ_CERT_ENDPOINT || '/api/qz/cert'
 const QZ_SIGN_ENDPOINT = import.meta.env.VITE_QZ_SIGN_ENDPOINT || '/api/qz/sign'
 const QZ_ALLOW_UNSIGNED =
@@ -1634,7 +1644,18 @@ export default function App() {
                           setMode(key)
                         }}
                       >
-                        <span>{emoji}</span>
+                        {MODE_THUMBNAILS[key] ? (
+                          <img
+                            src={MODE_THUMBNAILS[key]}
+                            alt={name}
+                            className="modeThumb"
+                            onError={ev => {
+                              ev.currentTarget.style.display = 'none'
+                              ev.currentTarget.nextSibling.style.display = 'block'
+                            }}
+                          />
+                        ) : null}
+                        <span style={{display: MODE_THUMBNAILS[key] ? 'none' : 'block'}}>{emoji}</span>
                         <p>{name}</p>
                       </button>
                     ))}

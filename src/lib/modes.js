@@ -37,7 +37,7 @@ const modes = {
     name: 'BytePlus Action Box',
     emoji: '\u2728',
     prompt:
-      'Full-body action-figure box. Dark navy interior with Artifial Intelegence/neural grid and neon teal-ungu edges, tanpa header. Outfit menyesuaikan gender (batik/formal pria; batik dress/kebaya wanita). Wajah asli, skin tone realis, identitas tidak diubah. Pose santai: tangan memegang badge/phone ala tech di pinggang, tidak menutupi wajah. Props lengkap : laptop di rak, tower/mini PC, phone, modul flash/light ilmuwan AI, dan elemen hologram; prop rapi, tidak melayang sembarangan. Pencahayaan sinematik lembut, rim light bersih, refleksi rapi, tanpa clutter.'
+      'Full-body action-figure box. Dark navy interior with robotic elements/neural grid and neon teal-ungu edges, tanpa header. Outfit menyesuaikan gender (batik/formal pria; batik dress/kebaya wanita). Wajah asli, skin tone realis, identitas tidak diubah. Pose santai: tangan memegang badge/phone ala tech di pinggang, tidak menutupi wajah. Props lengkap : laptop di rak, tower/mini PC, phone, modul flash/light ilmuwan AI, dan elemen hologram; prop rapi, tidak melayang sembarangan. Pencahayaan sinematik lembut, rim light bersih, refleksi rapi, tanpa clutter.'
   },
   byteplusprinterbadge: {
     name: 'BytePlus Caricature',

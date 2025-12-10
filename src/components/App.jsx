@@ -26,6 +26,11 @@ const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
 const withBase = path => `${BASE_URL}/${String(path).replace(/^\/+/, '')}`
 const MODE_ICON_FALLBACK = withBase('BytePlus.png')
+const WATERMARK_SOURCES = {
+  putih: withBase('watermark-putih.png'),
+  hitam: withBase('watermark-hitam.png'),
+  default: withBase('BytePlus.png')
+}
 const WATERMARK_MAP = {
   strangerthings: {position: 'top-center', scale: 0.6, variant: 'putih'},
   f1racing: {position: 'top-center', scale: 0.4, variant: 'hitam'},
@@ -154,16 +159,19 @@ const computeCaptureGeometry = (videoWidth, videoHeight, {portrait, rotate}) => 
     img.src = src
   })
 
-let watermarkPreviewPromise = null
+const watermarkPreviewCache = {}
 
-const getWatermarkImage = async () => {
-  if (!watermarkPreviewPromise) {
-    watermarkPreviewPromise = loadImage(WATERMARK_OVERLAY_SRC).catch(error => {
-      watermarkPreviewPromise = null
+const getWatermarkImage = async (variant = 'default') => {
+  const key = variant || 'default'
+  if (!watermarkPreviewCache[key]) {
+    const src = WATERMARK_SOURCES[key] || WATERMARK_OVERLAY_SRC
+    watermarkPreviewCache[key] = loadImage(src).catch(error => {
+      watermarkPreviewCache[key] = null
+      console.warn('Failed loading watermark overlay:', error)
       throw error
     })
   }
-  return watermarkPreviewPromise
+  return watermarkPreviewCache[key]
 }
 
   const getMimeTypeFromDataUrl = dataUrl => {
@@ -246,10 +254,30 @@ const ensureQZConnection = async () => {
   return qz
 }
 
-const buildWatermarkedPreview = async base64Data => {
+const computeWatermarkPosition = (width, height, w, h, position = 'top-right', margin = 16) => {
+  const m = Number.isFinite(margin) ? margin : 16
+  switch (position) {
+    case 'top-left':
+      return {x: m, y: m}
+    case 'top-center':
+      return {x: (width - w) / 2, y: m}
+    case 'bottom-left':
+      return {x: m, y: height - h - m}
+    case 'bottom-center':
+      return {x: (width - w) / 2, y: height - h - m}
+    case 'bottom-right':
+      return {x: width - w - m, y: height - h - m}
+    case 'center':
+      return {x: (width - w) / 2, y: (height - h) / 2}
+    default:
+      return {x: width - w - m, y: m}
+  }
+}
+
+const buildWatermarkedPreview = async (base64Data, watermarkOptions = DEFAULT_WATERMARK) => {
   const [sourceImage, watermark] = await Promise.all([
     loadImage(base64Data),
-    getWatermarkImage()
+    getWatermarkImage(watermarkOptions.variant)
   ])
 
   const width = sourceImage.width || 1
@@ -261,11 +289,17 @@ const buildWatermarkedPreview = async base64Data => {
   previewCtx.drawImage(sourceImage, 0, 0, width, height)
 
   if (watermark && watermark.width && watermark.height) {
-    const targetWidth = width * 0.22
+    const targetWidth = width * (watermarkOptions.scale || DEFAULT_WATERMARK.scale || 0.22)
     const targetHeight = targetWidth * (watermark.height / watermark.width)
     const margin = Math.max(14, Math.round(Math.min(width, height) * 0.03))
-    const x = width - targetWidth - margin
-    const y = margin
+    const {x, y} = computeWatermarkPosition(
+      width,
+      height,
+      targetWidth,
+      targetHeight,
+      watermarkOptions.position || DEFAULT_WATERMARK.position || 'top-right',
+      margin
+    )
     previewCtx.drawImage(watermark, x, y, targetWidth, targetHeight)
   }
 
@@ -486,7 +520,8 @@ export default function App() {
         const base64 = imageData.outputs[photo.id]
         if (!base64 || watermarkedOutputsRef.current[photo.id]) continue
         try {
-          const watermarked = await buildWatermarkedPreview(base64)
+          const wmOptions = getWatermarkSettingsForMode(photo.mode)
+          const watermarked = await buildWatermarkedPreview(base64, wmOptions)
           if (cancelled) return
           watermarkedOutputsRef.current = {
             ...watermarkedOutputsRef.current,

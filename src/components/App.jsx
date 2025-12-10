@@ -62,6 +62,7 @@ const QZ_ALLOW_UNSIGNED =
   String(import.meta.env?.VITE_QZ_ALLOW_UNSIGNED ?? '')
     .trim()
     .toLowerCase() === 'true'
+const ENABLE_QZ_PRINT = false
 
 const DEBUG_LOGS_ENABLED =
   String(import.meta.env?.VITE_DEBUG_LOGS ?? '').trim().toLowerCase() === 'true'
@@ -1334,17 +1335,12 @@ export default function App() {
         console.error('Print upload failed:', error)
       }
     }
-    if (!printSrc) {
-      alert('? Hasil AI belum siap untuk dicetak.')
-      setPrintMessage('Hasil AI belum siap untuk dicetak.')
-      return
+    // Upayakan pakai URL upload server jika sudah ada
+    if ((!printSrc || !/^https?:\/\//i.test(printSrc)) && cloudUrlsRef.current[currentPhotoId]) {
+      printSrc = cloudUrlsRef.current[currentPhotoId]
     }
-    // Pastikan sumber cetak sudah di-upload (watermark) dan berupa URL http(s) dari /uploads/*
-    const needsUpload =
-      !printSrc ||
-      !/^https?:\/\//i.test(printSrc) ||
-      (typeof printSrc === 'string' && printSrc.indexOf('/uploads/') === -1)
-    if (needsUpload) {
+    // Jika masih bukan URL http(s), coba satu kali upload ulang untuk print
+    if (!/^https?:\/\//i.test(printSrc) && imageData.outputs[currentPhotoId]) {
       try {
         const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
         const uploadResult = await generateQRCodeFor(
@@ -1358,30 +1354,39 @@ export default function App() {
           setCloudUrls(prev => ({...prev, [currentPhotoId]: uploadResult.directUrl}))
         }
       } catch (error) {
-        console.error('Upload for print failed:', error)
+        console.error('Upload for print (retry) failed:', error)
       }
     }
-    printSrc = sanitizeUrl(printSrc)
-    // Coba QZ Tray (tanpa membuka tab)
-    try {
-      const qz = await ensureQZConnection()
-      const printer = await qz.printers.getDefault()
-      if (!printer) {
-        throw new Error('Printer default tidak ditemukan')
-      }
-      const config = qz.configs.create(printer, {
-        copies: 1,
-        size: { width: 6, height: 4, units: 'in' },
-        margins: 0,
-        rasterize: true
-      })
-      setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
-      await qz.print(config, [{ type: 'image', data: printSrc }])
-      setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
+    if (!printSrc) {
+      alert('? Hasil AI belum siap untuk dicetak.')
+      setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
-    } catch (err) {
-      console.warn('QZ Tray print gagal, fallback ke tab print:', err)
-      setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
+    }
+    // Gunakan apa adanya (boleh base64/blob) lalu sanitasi jika URL
+    printSrc = sanitizeUrl(printSrc)
+
+    // Jika QZ diaktifkan, coba kirim; default dimatikan (ENABLE_QZ_PRINT=false)
+    if (ENABLE_QZ_PRINT) {
+      try {
+        const qz = await ensureQZConnection()
+        const printer = await qz.printers.getDefault()
+        if (!printer) {
+          throw new Error('Printer default tidak ditemukan')
+        }
+        const config = qz.configs.create(printer, {
+          copies: 1,
+          size: { width: 6, height: 4, units: 'in' },
+          margins: 0,
+          rasterize: true
+        })
+        setPrintMessage('Mengirim ke QZ Tray (4x6, borderless)...')
+        await qz.print(config, [{ type: 'image', data: printSrc }])
+        setPrintMessage('Print dikirim ke printer melalui QZ Tray.')
+        return
+      } catch (err) {
+        console.warn('QZ Tray print gagal, fallback ke tab print:', err)
+        setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
+      }
     }
 
     // Fallback: cetak via iframe tersembunyi (tanpa tab baru)

@@ -241,18 +241,120 @@ const requestQZSignature = payload =>
 
 const ensureQZConnection = async () => {
   const qz = await loadQZ()
-  // Dev/kiosk: allow unsigned, skip cert/signature (origin must be whitelisted; block anonymous off)
+  if (qz.api?.setPromiseType) {
+    qz.api.setPromiseType(window.Promise)
+  }
+  const useUnsigned = QZ_ALLOW_UNSIGNED === true
   if (qz.security?.setCertificatePromise) {
-    qz.security.setCertificatePromise(() => Promise.resolve(''))
+    qz.security.setCertificatePromise(() => (useUnsigned ? '' : fetchQZCertificate()))
   }
   if (qz.security?.setSignaturePromise) {
-    qz.security.setSignaturePromise(() => Promise.resolve(''))
+    qz.security.setSignaturePromise(async toSign =>
+      useUnsigned ? '' : requestQZSignature(toSign)
+    )
+  }
+  if (!useUnsigned && qz.security?.setSignatureAlgorithm) {
+    qz.security.setSignatureAlgorithm('SHA256')
   }
   if (!qz.websocket.isActive()) {
     await qz.websocket.connect()
   }
   return qz
 }
+
+const sanitizeUrl = raw => {
+  if (!raw || typeof raw !== 'string') return raw
+  let url = raw.trim()
+  // Tambah // jika lupa
+  url = url.replace(/^https?:localhost/i, match => match.replace(':', '://'))
+  if (!/^https?:\/\//i.test(url) && /^localhost[:/]/i.test(url)) {
+    url = `http://${url.replace(/^\/+/, '')}`
+  }
+  // Hilangkan host duplikat (contoh http://localhost:5179/http://localhost:5179/...)
+  url = url.replace(/^(https?:\/\/[^/]+)\/https?:\/\/[^/]+\/(.+)$/i, '$1/$2')
+  // Hilangkan host duplikat tanpa skema kedua (http://localhost:5179/localhost:5179/uploads/...)
+  url = url.replace(/^(https?:\/\/[^/]+)\/localhost:[0-9]+\/(.+)$/i, '$1/$2')
+  return url
+}
+
+// Fallback print tanpa membuka tab baru, gunakan iframe tersembunyi
+const printViaHiddenFrame = (printSrc, sizeCss = '4in 6in') =>
+  new Promise((resolve, reject) => {
+    if (!printSrc) {
+      reject(new Error('Print source tidak tersedia'))
+      return
+    }
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.opacity = '0'
+    iframe.style.pointerEvents = 'none'
+    iframe.referrerPolicy = 'no-referrer'
+
+    iframe.onload = () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document
+        if (!doc) throw new Error('Iframe print tidak tersedia')
+        const img = doc.getElementById('print-image')
+        if (!img) throw new Error('Gambar print tidak ditemukan')
+        let handled = false
+        const handleLoaded = () => {
+          if (handled) return
+          handled = true
+          try {
+            iframe.contentWindow?.focus()
+            iframe.contentWindow?.print()
+            setTimeout(() => iframe.remove(), 1400)
+            resolve()
+          } catch (err) {
+            iframe.remove()
+            reject(err)
+          }
+        }
+        const handleError = () => {
+          if (handled) return
+          handled = true
+          iframe.remove()
+          reject(new Error('Gagal memuat gambar untuk dicetak.'))
+        }
+        img.onload = handleLoaded
+        img.onerror = handleError
+        if (img.complete) {
+          if (img.naturalWidth && img.naturalHeight) {
+            handleLoaded()
+          } else {
+            handleError()
+          }
+        }
+      } catch (error) {
+        iframe.remove()
+        reject(error)
+      }
+    }
+    iframe.onerror = () => {
+      iframe.remove()
+      reject(new Error('Iframe print gagal dimuat.'))
+    }
+
+    iframe.srcdoc = `<!doctype html>
+<html>
+  <head>
+    <title>Print Photo</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      @page { size: ${sizeCss}; margin: 0; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
+      img { width: 100vw; height: 100vh; object-fit: cover; display: block; }
+    </style>
+  </head>
+  <body>
+    <img id="print-image" src="${printSrc}" alt="AI Photo" />
+  </body>
+</html>`
+    document.body.appendChild(iframe)
+  })
 
 const computeWatermarkPosition = (width, height, w, h, position = 'top-right', margin = 16) => {
   const m = Number.isFinite(margin) ? margin : 16
@@ -1237,6 +1339,29 @@ export default function App() {
       setPrintMessage('Hasil AI belum siap untuk dicetak.')
       return
     }
+    // Pastikan sumber cetak sudah di-upload (watermark) dan berupa URL http(s) dari /uploads/*
+    const needsUpload =
+      !printSrc ||
+      !/^https?:\/\//i.test(printSrc) ||
+      (typeof printSrc === 'string' && printSrc.indexOf('/uploads/') === -1)
+    if (needsUpload) {
+      try {
+        const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
+        const uploadResult = await generateQRCodeFor(
+          imageData.outputs[currentPhotoId],
+          `byteplus-photobox-print-${Date.now()}.jpg`,
+          `${currentPhotoId}-print`,
+          wmSettings
+        )
+        if (uploadResult?.directUrl) {
+          printSrc = uploadResult.directUrl
+          setCloudUrls(prev => ({...prev, [currentPhotoId]: uploadResult.directUrl}))
+        }
+      } catch (error) {
+        console.error('Upload for print failed:', error)
+      }
+    }
+    printSrc = sanitizeUrl(printSrc)
     // Coba QZ Tray (tanpa membuka tab)
     try {
       const qz = await ensureQZConnection()
@@ -1259,53 +1384,16 @@ export default function App() {
       setPrintMessage('QZ Tray belum tersambung, membuka tab print browser...')
     }
 
-    // Fallback: satu tab print-friendly dengan URL upload (sama dengan QR)
+    // Fallback: cetak via iframe tersembunyi (tanpa tab baru)
     const sizeCss = '4in 6in'
-    const printWindow = window.open('', 'photobooth-print', 'noopener,noreferrer')
-    if (!printWindow || printWindow.closed) {
-      alert('Popup diblokir, izinkan popup untuk mencetak.')
-      return
-    }
-    setPrintMessage('Membuka tab gambar (QR) dan memicu print. Jika gagal, tekan Ctrl+P / Cmd+P.')
+    setPrintMessage('Memicu print browser (tanpa tab baru)...')
     try {
-      printWindow.document.open()
-      printWindow.document.write(`<!doctype html>
-<html>
-  <head>
-    <title>Print Photo</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      @page { size: ${sizeCss}; margin: 0; }
-      html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
-      img { width: 100vw; height: 100vh; object-fit: cover; display: block; }
-    </style>
-  </head>
-  <body>
-    <img id="print-image" src="${printSrc}" alt="AI Photo" />
-    <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; padding: 10px 12px; border-radius: 8px; font-family: sans-serif; font-size: 12px;">
-      <div>Jika dialog print tidak muncul:</div>
-      <div>- Tekan Ctrl+P / Cmd+P</div>
-      <div>- Atau buka link ini: <a href="${printSrc}" target="_blank" rel="noreferrer" style="color:#c4d7ff;">Buka gambar</a></div>
-    </div>
-    <script>
-      const img = document.getElementById('print-image');
-      img.onload = () => setTimeout(() => { window.focus(); window.print(); }, 120);
-      img.onerror = () => {
-        alert('Gagal memuat gambar untuk dicetak.');
-        setTimeout(() => window.close(), 300);
-      };
-    <\\/script>
-  </body>
-</html>`)
-      printWindow.document.close()
-      try {
-        printWindow.focus()
-      } catch {
-        // ignore
-      }
+      await printViaHiddenFrame(printSrc, sizeCss)
+      setPrintMessage('Dialog print browser dibuka. Jika tidak muncul, tekan Ctrl+P / Cmd+P.')
     } catch (error) {
-      console.error('Gagal menulis halaman print:', error)
-      alert('Popup diblokir, izinkan popup untuk mencetak.')
+      console.error('Fallback print gagal:', error)
+      alert('Cetak lewat browser gagal. Coba simpan gambar dan print manual.')
+      setPrintMessage('Cetak lewat browser gagal. Coba simpan gambar dan print manual.')
     }
   }
   const handleModeHover = useCallback((modeInfo, event) => {

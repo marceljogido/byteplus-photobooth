@@ -82,10 +82,22 @@ if (!fs.existsSync(WATERMARK_FILE)) {
 const app = express()
 const PORT = process.env.PORT || 5000
 
+const normalizeBaseUrl = value => {
+  if (!value) return ''
+  const trimmed = value.trim().replace(/\/+$/, '')
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) {
+    return trimmed
+  }
+  // If someone sets "example.com" or "http:example.com", force http:// prefix
+  const withoutSlashes = trimmed.replace(/^\/+/, '')
+  const withoutProto = withoutSlashes.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:/, '')
+  return `http://${withoutProto}`
+}
+
 const resolvePublicBaseUrl = req => {
-  const configured = (process.env.PUBLIC_BASE_URL || '').trim()
+  const configured = normalizeBaseUrl(process.env.PUBLIC_BASE_URL || '')
   if (configured) {
-    return configured.replace(/\/+$/, '')
+    return configured
   }
   return `${req.protocol}://${req.get('host')}`
 }

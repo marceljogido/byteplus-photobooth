@@ -346,8 +346,24 @@ const printViaHiddenFrame = (printSrc, sizeCss = '4in 6in') =>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       @page { size: ${sizeCss}; margin: 0; }
-      html, body { width: 100%; height: 100%; overflow: hidden; background: #fff; }
-      img { width: 100vw; height: 100vh; object-fit: cover; display: block; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #fff;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0; /* full-bleed; printer yang menentukan margin fisik */
+      }
+      img {
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain; /* jaga watermark tetap utuh */
+        display: block;
+      }
     </style>
   </head>
   <body>
@@ -1309,16 +1325,18 @@ export default function App() {
       return
     }
 
+    // Pastikan cetak menggunakan file yang sudah di-upload (URL server), bukan base64 lokal
     let printSrc = cloudUrlsRef.current[currentPhotoId] || null
-    if (!printSrc) {
-      try {
-        await prepareDownloadsForPhoto(currentPhotoId, {force: true})
-        printSrc = cloudUrlsRef.current[currentPhotoId]
-      } catch {
-        // ignore
-      }
+
+    try {
+      await prepareDownloadsForPhoto(currentPhotoId, {force: true})
+      printSrc = cloudUrlsRef.current[currentPhotoId] || printSrc
+    } catch (error) {
+      console.error('Gagal menyiapkan upload untuk print:', error)
     }
-    if (!printSrc && imageData.outputs[currentPhotoId]) {
+
+    // Jika belum ada URL http(s), paksa upload sekali lagi khusus print
+    if ((!printSrc || !/^https?:\/\//i.test(printSrc)) && imageData.outputs[currentPhotoId]) {
       try {
         const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
         const uploadResult = await generateQRCodeFor(
@@ -1329,40 +1347,26 @@ export default function App() {
         )
         if (uploadResult?.directUrl) {
           printSrc = uploadResult.directUrl
-          setCloudUrls(prev => ({...prev, [currentPhotoId]: uploadResult.directUrl}))
+          cloudUrlsRef.current = {
+            ...cloudUrlsRef.current,
+            [currentPhotoId]: uploadResult.directUrl
+          }
+          setCloudUrls(prev => ({
+            ...prev,
+            [currentPhotoId]: uploadResult.directUrl
+          }))
         }
       } catch (error) {
         console.error('Print upload failed:', error)
       }
     }
-    // Upayakan pakai URL upload server jika sudah ada
-    if ((!printSrc || !/^https?:\/\//i.test(printSrc)) && cloudUrlsRef.current[currentPhotoId]) {
-      printSrc = cloudUrlsRef.current[currentPhotoId]
-    }
-    // Jika masih bukan URL http(s), coba satu kali upload ulang untuk print
-    if (!/^https?:\/\//i.test(printSrc) && imageData.outputs[currentPhotoId]) {
-      try {
-        const wmSettings = getWatermarkSettingsForPhoto(currentPhotoId)
-        const uploadResult = await generateQRCodeFor(
-          imageData.outputs[currentPhotoId],
-          `byteplus-photobox-print-${Date.now()}.jpg`,
-          `${currentPhotoId}-print`,
-          wmSettings
-        )
-        if (uploadResult?.directUrl) {
-          printSrc = uploadResult.directUrl
-          setCloudUrls(prev => ({...prev, [currentPhotoId]: uploadResult.directUrl}))
-        }
-      } catch (error) {
-        console.error('Upload for print (retry) failed:', error)
-      }
-    }
-    if (!printSrc) {
-      alert('? Hasil AI belum siap untuk dicetak.')
-      setPrintMessage('Hasil AI belum siap untuk dicetak.')
+
+    if (!printSrc || !/^https?:\/\//i.test(printSrc)) {
+      alert('? URL hasil upload belum siap. Coba lagi setelah upload selesai.')
+      setPrintMessage('URL upload belum siap untuk dicetak. Coba lagi sesaat lagi.')
       return
     }
-    // Gunakan apa adanya (boleh base64/blob) lalu sanitasi jika URL
+
     printSrc = sanitizeUrl(printSrc)
 
     // Jika QZ diaktifkan, coba kirim; default dimatikan (ENABLE_QZ_PRINT=false)

@@ -27,13 +27,13 @@ const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
 const withBase = path => `${BASE_URL}/${String(path).replace(/^\/+/, '')}`
 const MODE_ICON_FALLBACK = withBase('BytePlus.png')
 const WATERMARK_MAP = {
-  strangerthings: {position: 'top-center', scale: 0.3, variant: 'putih'},
-  f1racing: {position: 'top-center', scale: 0.2, variant: 'hitam'},
-  retroanime: {position: 'top-left', scale: 0.2, variant: 'hitam'},
-  beach: {position: 'top-left', scale: 0.2, variant: 'hitam'},
-  byteplus: {position: 'top-left', scale: 0.2, variant: 'putih'},
-  byteplusactionbox: {position: 'bottom-center', scale: 0.25, variant: 'putih'},
-  byteplusprinterbadge: {position: 'bottom-center', scale: 0.25, variant: 'putih'}
+  strangerthings: {position: 'top-center', scale: 0.6, variant: 'putih'},
+  f1racing: {position: 'top-center', scale: 0.4, variant: 'hitam'},
+  retroanime: {position: 'top-left', scale: 0.3, variant: 'hitam'},
+  beach: {position: 'top-left', scale: 0.3, variant: 'hitam'},
+  byteplus: {position: 'top-left', scale: 0.3, variant: 'putih'},
+  byteplusactionbox: {position: 'bottom-center', scale: 0.3, variant: 'putih'},
+  byteplusprinterbadge: {position: 'bottom-center', scale: 0.5, variant: 'putih'}
 }
 const DEFAULT_WATERMARK = {position: 'top-right', scale: 0.22, variant: 'putih'}
 // Optional thumbnails/icons for mode buttons (place images in public/thumbnails/<key>.jpg or .png)
@@ -1794,7 +1794,7 @@ export default function App() {
                         <button
                           key="custom"
                           className={c('mobileModeButton', {active: activeMode === 'custom'})}
-                        onClick={() => {
+                          onClick={() => {
                             setMode('custom')
                             setShowCustomPrompt(true)
                             setShowMobileModeSelector(false)
@@ -1996,6 +1996,15 @@ export default function App() {
           <div className="desktopModeContent">
             <div className="desktopModeHeader">
               <h2 className="desktopModeTitle">🎨 Pilih Mode Foto</h2>
+              <p className="modeHeaderSubtitle">Pilih Mode AI</p>
+              <button
+                type="button"
+                className="desktopModeClose"
+                aria-label="Tutup pilihan mode"
+                onClick={() => setShowDesktopModeSelector(false)}
+              >
+                <span className="icon">close</span>
+              </button>
             </div>
             
             <div className="desktopModeGrid">

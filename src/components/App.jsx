@@ -23,6 +23,9 @@ const ctx = canvas.getContext('2d')
 const modeKeys = Object.keys(modes)
 const WATERMARK_OVERLAY_SRC = '/BytePlus.png'
 const QZ_SCRIPT_URL = 'https://cdn.jsdelivr.net/npm/qz-tray@2.2.5/qz-tray.js'
+const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const withBase = path => `${BASE_URL}/${String(path).replace(/^\/+/, '')}`
+const MODE_ICON_FALLBACK = withBase('BytePlus.png')
 const WATERMARK_MAP = {
   strangerthings: {position: 'top-center', scale: 0.3, variant: 'putih'},
   f1racing: {position: 'top-center', scale: 0.2, variant: 'hitam'},
@@ -33,16 +36,21 @@ const WATERMARK_MAP = {
   byteplusprinterbadge: {position: 'bottom-center', scale: 0.25, variant: 'putih'}
 }
 const DEFAULT_WATERMARK = {position: 'top-right', scale: 0.22, variant: 'putih'}
-// Optional thumbnail previews for mode buttons (place images in public/thumbnails/<key>.jpg or .png)
+// Optional thumbnails/icons for mode buttons (place images in public/thumbnails/<key>.jpg or .png)
 const MODE_THUMBNAILS = {
-  strangerthings: '/thumbnails/strangerthings.jpg',
-  retroanime: '/thumbnails/retroanime.jpg',
-  beach: '/thumbnails/beach.jpg',
-  f1racing: '/thumbnails/f1racing.jpg',
-  byteplus: '/thumbnails/byteplus.jpg',
-  byteplusactionbox: '/thumbnails/byteplusactionbox.jpg',
-  byteplusprinterbadge: '/thumbnails/byteplusprinterbadge.jpg'
+  custom: MODE_ICON_FALLBACK,
+  anime: withBase('thumbnails/mode1.jpg'),
+  strangerthings: withBase('thumbnails/mode2.jpg'),
+  beach: withBase('thumbnails/mode3.jpg'),
+  f1racing: withBase('thumbnails/mode4.jpg'),
+  byteplus: withBase('thumbnails/mode5.jpg'),
+  byteplusactionbox: withBase('thumbnails/mode6.jpg'),
+  byteplusprinterbadge: withBase('thumbnails/mode7.jpg')
 }
+const MODE_ICONS = {
+  ...MODE_THUMBNAILS
+}
+const getModeIconSrc = key => MODE_ICONS[key] || MODE_ICON_FALLBACK
 const QZ_CERT_ENDPOINT = import.meta.env.VITE_QZ_CERT_ENDPOINT || '/api/qz/cert'
 const QZ_SIGN_ENDPOINT = import.meta.env.VITE_QZ_SIGN_ENDPOINT || '/api/qz/sign'
 const QZ_ALLOW_UNSIGNED =
@@ -1630,10 +1638,10 @@ export default function App() {
                         setShowCustomPrompt(true)
                       }}
                     >
-                      <span>✨</span>
+                      <span className="modeThumb modeThumbEmoji" aria-hidden="true">✨</span>
                       <p>Custom</p>
                     </button>
-                    {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+                    {Object.entries(modes).map(([key, {name, prompt}]) => (
                       <button
                         key={key}
                         className={c('cameraModeButton', {active: key === activeMode})}
@@ -1644,18 +1652,13 @@ export default function App() {
                           setMode(key)
                         }}
                       >
-                        {MODE_THUMBNAILS[key] ? (
-                          <img
-                            src={MODE_THUMBNAILS[key]}
-                            alt={name}
-                            className="modeThumb"
-                            onError={ev => {
-                              ev.currentTarget.style.display = 'none'
-                              ev.currentTarget.nextSibling.style.display = 'block'
-                            }}
-                          />
-                        ) : null}
-                        <span style={{display: MODE_THUMBNAILS[key] ? 'none' : 'block'}}>{emoji}</span>
+                        <img
+                          src={getModeIconSrc(key)}
+                          alt={name}
+                          className="modeThumb"
+                          loading="lazy"
+                          decoding="async"
+                        />
                         <p>{name}</p>
                       </button>
                     ))}
@@ -1791,16 +1794,16 @@ export default function App() {
                         <button
                           key="custom"
                           className={c('mobileModeButton', {active: activeMode === 'custom'})}
-                          onClick={() => {
+                        onClick={() => {
                             setMode('custom')
                             setShowCustomPrompt(true)
                             setShowMobileModeSelector(false)
                           }}
                         >
-                          <span>✨</span>
-                          <span>Custom</span>
+                          <span className="modeThumb modeThumbEmoji modeThumbCompact" aria-hidden="true">✨</span>
+                          <span className="modeLabel">Custom</span>
                         </button>
-                        {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+                        {Object.entries(modes).map(([key, {name, prompt}]) => (
                           <button
                             key={key}
                             className={c('mobileModeButton', {active: key === activeMode})}
@@ -1809,8 +1812,14 @@ export default function App() {
                               setShowMobileModeSelector(false)
                             }}
                           >
-                            <span>{emoji}</span>
-                            <span>{name}</span>
+                            <img
+                              src={getModeIconSrc(key)}
+                              alt={name}
+                              className="modeThumb modeThumbCompact"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                            <span className="modeLabel">{name}</span>
                           </button>
                         ))}
                       </div>
@@ -2003,10 +2012,10 @@ export default function App() {
                   setShowDesktopModeSelector(false)
                 }}
               >
-                <span>✨</span> 
+                <span className="modeThumb modeThumbEmoji modeThumbCompact" aria-hidden="true">✨</span> 
                 <p>Custom</p>
               </button>
-              {Object.entries(modes).map(([key, {name, emoji, prompt}]) => (
+              {Object.entries(modes).map(([key, {name, prompt}]) => (
                 <button
                   key={key}
                   className={c('desktopModeButton', {active: key === activeMode})}
@@ -2017,7 +2026,13 @@ export default function App() {
                     setShowDesktopModeSelector(false)
                   }}
                 >
-                  <span>{emoji}</span> 
+                  <img
+                    src={getModeIconSrc(key)}
+                    alt={name}
+                    className="modeThumb modeThumbCompact"
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <p>{name}</p>
                 </button>
               ))}

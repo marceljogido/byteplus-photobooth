@@ -1932,8 +1932,8 @@ main .canvasSection:first-child {
 
 .cameraModeGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(15px);
   border: 1px solid rgba(14, 165, 233, 0.3);
@@ -1949,19 +1949,20 @@ main .canvasSection:first-child {
   align-items: center;
   text-align: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px;
+  gap: 8px;
+  padding: 12px;
   background: rgba(14, 165, 233, 0.12);
   border: 2px solid rgba(14, 116, 144, 0.25);
   border-radius: 8px;
   color: #0f172a;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-height: 60px;
+  min-height: 260px;
   text-align: center;
   backdrop-filter: blur(10px);
   text-shadow: none;
   box-shadow: 0 6px 14px rgba(14, 116, 144, 0.18);
+  aspect-ratio: 3 / 4;
 }
 
 .cameraModeButton:hover {
@@ -1980,23 +1981,85 @@ main .canvasSection:first-child {
 }
 
 .cameraModeButton span {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .cameraModeButton p {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  margin: 0;
+  margin: 4px 0 0 0;
   text-align: center;
 }
 
 .modeThumb {
-  width: 42px;
-  height: 42px;
+  width: auto;
+  max-width: 100%;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(35, 92, 255, 0.2);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  display: block;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(238, 242, 255, 0.92));
+}
+.modeThumb.modeThumbCompact {
+  height: 170px;
+}
+.modeThumb.modeThumbEmoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.95), rgba(238, 242, 255, 0.95));
+  font-size: 54px;
+  line-height: 1;
+  color: #0f172a;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.modeIconWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(219, 234, 254, 0.92));
+  border: 1px solid rgba(14, 116, 144, 0.2);
+  box-shadow: 0 6px 14px rgba(14, 116, 144, 0.18);
+  line-height: 1 !important;
+  font-size: 0 !important;
+}
+.modeIconWrapper.modeIconWrapperEmoji {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.95), rgba(238, 242, 255, 0.95));
+  border-color: rgba(14, 116, 144, 0.25);
+  box-shadow: 0 8px 18px rgba(14, 116, 144, 0.2);
+}
+.modeIcon {
+  width: 48px;
+  height: 48px;
   object-fit: cover;
-  border-radius: 10px;
-  border: 2px solid rgba(35, 92, 255, 0.25);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  display: block;
+  box-shadow: 0 4px 10px rgba(14, 116, 144, 0.15);
+  background: #e0f2fe;
+}
+.mobileModeButton .modeIconWrapper {
+  padding: 4px;
+}
+.mobileModeButton .modeIcon {
+  width: 38px;
+  height: 38px;
+}
+.modeIconEmoji {
+  display: block;
+  font-size: 36px;
+  line-height: 1;
+}
+.desktopModeButton .modeIcon {
+  width: 52px;
+  height: 52px;
+}
+.modeLabel {
+  display: block;
 }
 
 .cameraPreview {
@@ -2871,8 +2934,8 @@ main .canvasSection:first-child {
 
   .cameraModeButton {
     min-height: 60px;
-    padding: 8px 6px;
-    font-size: 10px;
+    padding: 10px 8px;
+    font-size: 11px;
   }
 
   .cameraModeButton span {
@@ -2880,7 +2943,7 @@ main .canvasSection:first-child {
   }
 
   .cameraModeButton p {
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.2;
   }
 
@@ -2936,8 +2999,8 @@ main .canvasSection:first-child {
   gap: 10px;
 }
 .desktopModeGrid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
     margin-top: 10px !important;
     width: 100% !important;
     /* Portrait grid - more rows, fewer columns */
@@ -4912,10 +4975,7 @@ main .canvasSection:first-child {
   font-size: 1.8rem;
   font-weight: 600;
   margin: 0 0 10px 0;
-  background: linear-gradient(135deg, #2a7de1, #235cff, #7425ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #235cff;
 }
 
 .previewSubtitle {

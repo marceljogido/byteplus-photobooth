@@ -19,7 +19,7 @@ const modes = {
     name: 'Beach Fun',
     emoji: '\uD83C\uDFD6\uFE0F',
     prompt:
-      'Transform the person into a high-quality 3D render on a sunny tropical beach (bobblehead, proporsi tubuh wajar, wajah asli). Pose aktif/santai: sedang berselancar di ombak, atau rebahan/berjemur di pasir seperti anak pantai. Outfit summer cerah; ekspresi riang. Latar: laut biru, ombak, pasir hangat, sedikit palm tree; tanpa teks atau logo.'
+      'Transform the person into a high-quality 3D render on a sunny tropical beach (bobblehead style: kepala sedikit lebih besar dari tubuh, tapi leher normal tanpa pegas/spring). Wajah asli dan proporsi tetap wajar. Pose aktif/santai: sedang berselancar di ombak, atau rebahan/berjemur di pasir seperti anak pantai. Outfit summer cerah; ekspresi riang. Latar: laut biru, ombak, pasir hangat, sedikit palm tree; tanpa teks atau logo.'
   },
   f1racing: {
     name: 'F1 Racer',
@@ -37,11 +37,11 @@ const modes = {
     name: 'BytePlus Action Box',
     emoji: '\u2728',
     prompt:
-      'Full-body action-figure box. Dark navy interior with AI/neural grid and neon teal-ungu edges, tanpa header. Outfit menyesuaikan gender (batik/formal pria; batik dress/kebaya wanita). Wajah asli, skin tone realis, identitas tidak diubah. Pose santai: tangan memegang badge/phone ala tech di pinggang, tidak menutupi wajah. Props lengkap : laptop di rak, tower/mini PC, phone, modul flash/light ilmuwan AI, dan elemen hologram; prop rapi, tidak melayang sembarangan. Pencahayaan sinematik lembut, rim light bersih, refleksi rapi, tanpa clutter.'
+      'Full-body action-figure box. Dark navy interior with Artifial Intelegence/neural grid and neon teal-ungu edges, tanpa header. Outfit menyesuaikan gender (batik/formal pria; batik dress/kebaya wanita). Wajah asli, skin tone realis, identitas tidak diubah. Pose santai: tangan memegang badge/phone ala tech di pinggang, tidak menutupi wajah. Props lengkap : laptop di rak, tower/mini PC, phone, modul flash/light ilmuwan AI, dan elemen hologram; prop rapi, tidak melayang sembarangan. Pencahayaan sinematik lembut, rim light bersih, refleksi rapi, tanpa clutter.'
   },
   byteplusprinterbadge: {
-    name: 'BytePlus Printer Badge',
-    emoji: '\uD83D\uDCF0',
+    name: 'BytePlus Caricature',
+    emoji: '\uD83C\uDFA8',
     prompt:
       'Full-frame, fun tech-caricature portrait (gaya 3D/illustration) dengan sedikit eksaggerasi fitur tapi tetap menjaga identitas wajah. Tidak ada printer/kartu/badge/business card. Proporsi tubuh wajar, ekspresi ramah. Outfit rapi ala ambassador (blazer + kaos/kemeja atau smart casual) warna biru/gelap. Latar gradasi biru gelap dengan pola sirkuit sedang, cahaya expo lembut, tanpa teks atau logo. Sisakan area kosong bersih di bagian bawah gambar (footer) tanpa elemen apa pun untuk tempat watermark tempel.'
   }

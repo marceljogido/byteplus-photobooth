@@ -32,13 +32,13 @@ const WATERMARK_SOURCES = {
   default: withBase('BytePlus.png')
 }
 const WATERMARK_MAP = {
-  strangerthings: {position: 'top-center', scale: 0.6, variant: 'putih'},
+  strangerthings: {position: 'top-center', scale: 0.7, variant: 'putih'},
   f1racing: {position: 'top-center', scale: 0.4, variant: 'hitam'},
   anime: {position: 'top-left', scale: 0.3, variant: 'hitam'}, // retro anime mode key is "anime"
   beach: {position: 'top-left', scale: 0.3, variant: 'hitam'},
   byteplus: {position: 'top-left', scale: 0.3, variant: 'putih'},
-  byteplusactionbox: {position: 'bottom-center', scale: 0.3, variant: 'putih'},
-  byteplusprinterbadge: {position: 'bottom-center', scale: 0.5, variant: 'putih'}
+  byteplusactionbox: {position: 'bottom-center', scale: 0.2, variant: 'putih'},
+  byteplusprinterbadge: {position: 'bottom-center', scale: 0.4, variant: 'putih'}
 }
 const DEFAULT_WATERMARK = {position: 'top-right', scale: 0.22, variant: 'putih'}
 // Optional thumbnails/icons for mode buttons (place images in public/thumbnails/<key>.jpg or .png)

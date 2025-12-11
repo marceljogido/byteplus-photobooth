@@ -27,6 +27,7 @@ const WATERMARK_FILE_WHITE = path.resolve(__dirname, '..', '..', 'public', 'wate
 const WATERMARK_FILE_BLACK = path.resolve(__dirname, '..', '..', 'public', 'watermark-hitam.png')
 const WATERMARK_POSITION = String(process.env.WATERMARK_POSITION || 'top-right').toLowerCase()
 const WATERMARK_VARIANT = String(process.env.WATERMARK_VARIANT || 'putih').toLowerCase()
+const WATERMARK_INSET_FACTOR = 0.08
 const normalizePem = value =>
   (value || '')
     .replace(/\\n/g, '\n')
@@ -207,30 +208,38 @@ const applyWatermarkToBuffer = async (buffer, mimetype, options = {}) => {
       Math.round(targetWidth * (watermarkMetadata.height / watermarkMetadata.width))
     )
     const margin = Math.max(10, Math.round(Math.min(imageMetadata.width, imageMetadata.height) * 0.04))
+    const insetX = Math.max(0, Math.round(imageMetadata.width * WATERMARK_INSET_FACTOR))
+    const insetY = Math.max(0, Math.round(imageMetadata.height * WATERMARK_INSET_FACTOR))
     const computePosition = () => {
       const position = (options.position || WATERMARK_POSITION || '').toLowerCase()
       switch (position) {
         case 'top-left':
-          return { left: margin, top: margin }
+          return { left: insetX + margin, top: insetY + margin }
         case 'top-center':
-          return { left: Math.max(0, Math.round((imageMetadata.width - targetWidth) / 2)), top: margin }
+          return {
+            left: Math.max(0, Math.round((imageMetadata.width - targetWidth) / 2)),
+            top: insetY + margin
+          }
         case 'bottom-left':
-          return { left: margin, top: Math.max(0, imageMetadata.height - targetHeight - margin) }
+          return {
+            left: insetX + margin,
+            top: Math.max(0, imageMetadata.height - targetHeight - insetY - margin)
+          }
         case 'bottom-right':
           return {
-            left: Math.max(0, imageMetadata.width - targetWidth - margin),
-            top: Math.max(0, imageMetadata.height - targetHeight - margin)
+            left: Math.max(0, imageMetadata.width - targetWidth - insetX - margin),
+            top: Math.max(0, imageMetadata.height - targetHeight - insetY - margin)
           }
         case 'bottom-center':
           return {
             left: Math.max(0, Math.round((imageMetadata.width - targetWidth) / 2)),
-            top: Math.max(0, imageMetadata.height - targetHeight - margin)
+            top: Math.max(0, imageMetadata.height - targetHeight - insetY - margin)
           }
         case 'top-right':
         default:
           return {
-            left: Math.max(0, imageMetadata.width - targetWidth - margin),
-            top: margin
+            left: Math.max(0, imageMetadata.width - targetWidth - insetX - margin),
+            top: insetY + margin
           }
       }
     }

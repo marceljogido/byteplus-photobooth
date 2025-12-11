@@ -34,7 +34,7 @@ const WATERMARK_SOURCES = {
 const WATERMARK_MAP = {
   strangerthings: {position: 'top-center', scale: 0.6, variant: 'putih'},
   f1racing: {position: 'top-center', scale: 0.4, variant: 'hitam'},
-  retroanime: {position: 'top-left', scale: 0.3, variant: 'hitam'},
+  anime: {position: 'top-left', scale: 0.3, variant: 'hitam'}, // retro anime mode key is "anime"
   beach: {position: 'top-left', scale: 0.3, variant: 'hitam'},
   byteplus: {position: 'top-left', scale: 0.3, variant: 'putih'},
   byteplusactionbox: {position: 'bottom-center', scale: 0.3, variant: 'putih'},
@@ -361,7 +361,7 @@ const printViaHiddenFrame = (printSrc, sizeCss = '4in 6in') =>
       img {
         width: 100vw;
         height: 100vh;
-        object-fit: contain; /* jaga watermark tetap utuh */
+        object-fit: cover; /* isi penuh, watermark sudah digeser ke dalam agar aman */
         display: block;
       }
     </style>
@@ -373,23 +373,26 @@ const printViaHiddenFrame = (printSrc, sizeCss = '4in 6in') =>
     document.body.appendChild(iframe)
   })
 
+const WATERMARK_INSET_FACTOR = 0.08
 const computeWatermarkPosition = (width, height, w, h, position = 'top-right', margin = 16) => {
   const m = Number.isFinite(margin) ? margin : 16
+  const insetX = Math.max(0, width * WATERMARK_INSET_FACTOR)
+  const insetY = Math.max(0, height * WATERMARK_INSET_FACTOR)
   switch (position) {
     case 'top-left':
-      return {x: m, y: m}
+      return {x: insetX + m, y: insetY + m}
     case 'top-center':
-      return {x: (width - w) / 2, y: m}
+      return {x: (width - w) / 2, y: insetY + m}
     case 'bottom-left':
-      return {x: m, y: height - h - m}
+      return {x: insetX + m, y: height - h - insetY - m}
     case 'bottom-center':
-      return {x: (width - w) / 2, y: height - h - m}
+      return {x: (width - w) / 2, y: height - h - insetY - m}
     case 'bottom-right':
-      return {x: width - w - m, y: height - h - m}
+      return {x: width - w - insetX - m, y: height - h - insetY - m}
     case 'center':
       return {x: (width - w) / 2, y: (height - h) / 2}
     default:
-      return {x: width - w - m, y: m}
+      return {x: width - w - insetX - m, y: insetY + m}
   }
 }
 
